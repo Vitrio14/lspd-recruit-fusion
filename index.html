@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSPD - Portale Arruolamento</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Barlow+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --police-blue: #003366;
+            --police-accent: #ffd700;
+            --terminal-bg: #05070a;
+            --border-blue: #1e3a5f;
+            --gold: #ffd700;
+            --danger: #ff4444;
+        }
+
+        body {
+            background-color: var(--terminal-bg);
+            background: linear-gradient(rgba(5, 7, 10, 0.9), rgba(5, 7, 10, 0.9)), url('./banner.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            font-family: 'Barlow Condensed', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .police-logo { width: 120px; margin-top: 30px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); z-index: 5; }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            background: rgba(13, 17, 23, 0.95);
+            border: 2px solid var(--border-blue);
+            padding: 30px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .classified-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 2px 8px;
+            font-family: 'Orbitron';
+            font-size: 0.6rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        h1 { 
+            font-family: 'Orbitron'; 
+            text-align: center; 
+            color: #fff; 
+            font-size: 1.2rem; 
+            border-bottom: 2px solid var(--police-accent); 
+            padding-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .section-header { 
+            font-family: 'Orbitron'; 
+            color: var(--police-accent); 
+            font-size: 0.85rem; 
+            margin: 25px 0 10px; 
+            border-bottom: 1px solid rgba(255,215,0,0.2); 
+            letter-spacing: 1px;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        
+        label { display: block; color: var(--police-accent); font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;}
+        
+        input, textarea, select {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-blue); color: white;
+            font-family: 'Barlow Condensed'; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
+        }
+
+        input:focus, textarea:focus { border-color: var(--police-accent); outline: none; background: rgba(30, 40, 50, 0.6); }
+
+        .checkbox-group { 
+            display: flex; gap: 15px; background: rgba(255,255,255,0.05); padding: 10px; 
+            border: 1px solid var(--border-blue); flex-wrap: wrap;
+        }
+
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 1rem; color: #fff; }
+        .checkbox-group input { width: auto; }
+
+        button {
+            width: 100%; padding: 18px; background: var(--police-blue); color: white; border: 1px solid var(--police-accent);
+            font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 20px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        button:hover:not(:disabled) { background: #004488; box-shadow: 0 0 20px rgba(0,51,102,0.8); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* MODALE */
+        #modalOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
+        }
+
+        .modal-content {
+            background: #0d1117; border: 2px solid var(--police-accent); width: 90%; max-width: 550px;
+            padding: 40px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,1);
+        }
+
+        .protocol-steps { text-align: left; margin: 25px 0; }
+        .protocol-step-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; font-size: 1rem; line-height: 1.4; }
+        .protocol-step-number {
+            background: var(--police-accent); color: black; font-family: 'Orbitron';
+            padding: 4px 8px; font-weight: bold; font-size: 0.8rem; border-radius: 2px; flex-shrink: 0;
+        }
+
+        .protocol-footer-note { font-family: 'Orbitron'; color: var(--police-accent); text-align: center; font-size: 0.75rem; border-top: 1px solid var(--border-blue); padding-top: 15px; margin-top: 20px;}
+
+        .btn-close {
+            background: transparent; border: 1px solid var(--police-accent); color: var(--police-accent); padding: 10px 25px;
+            cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem; display: block; margin: 20px auto 0; transition: 0.3s;
+        }
+        .btn-close:hover { background: var(--police-accent); color: #000; }
+    </style>
+</head>
+<body>
+
+<img src="./logo.png" alt="LSPD Logo" class="police-logo">
+
+<div class="container">
+    <div class="classified-tag">Restricted Access</div>
+    <h1>RECLUTAMENTO CIVILE LSPD</h1>
+    <form id="candidaturaForm">
+        <div class="section-header"># FASCICOLO OOC</div>
+        <div class="form-row">
+            <div class="form-group"><label>Nome Reale</label><input type="text" id="nomeReale" required></div>
+            <div class="form-group"><label>Età Reale</label><input type="number" id="etaReale" required></div>
+        </div>
+        <div class="form-group"><label>Discord ID (Unico)</label><input type="text" id="discordID" placeholder="esempio_id" required></div>
+
+        <div class="section-header"># FASCICOLO IN-CHARACTER</div>
+        <div class="form-row">
+            <div class="form-group"><label>Nome e Cognome</label><input type="text" id="nomeIC" required></div>
+            <div class="form-group"><label>Data di Nascita</label><input type="text" id="dataNascita" placeholder="GG/MM/AAAA" required></div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group"><label>Recapito Telefonico</label><input type="text" id="telefono" required></div>
+            <div class="form-group">
+                <label>Porto d'Armi</label>
+                <select id="portoArmi">
+                    <option value="Posseduto">Posseduto</option>
+                    <option value="Non Posseduto">Non Posseduto</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Abilitazioni di Guida (Patenti)</label>
+            <div class="checkbox-group">
+                <label><input type="checkbox" name="patente" value="A"> Cat. A</label>
+                <label><input type="checkbox" name="patente" value="B"> Cat. B</label>
+                <label><input type="checkbox" name="patente" value="C"> Cat. C</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Stato Giuridico (Fedina Penale)</label>
+            <select id="fedina">
+                <option value="Pulita">Pulita / Incensurato</option>
+                <option value="Pregiudizi Minori">Pregiudizi Minori</option>
+                <option value="Sporca">Precedenti Penali Gravi</option>
+            </select>
+        </div>
+
+        <div class="form-group"><label>Esperienze Lavorative Pregresse</label><textarea id="esperienze" rows="2" required></textarea></div>
+        <div class="form-group"><label>Profilo Psicologico / Descrizione</label><textarea id="descrizione" rows="2" required></textarea></div>
+        <div class="form-group"><label>Motivazione Arruolamento</label><textarea id="motivazione" rows="2" required></textarea></div>
+
+        <button type="submit" id="btnInvia">TRASMETTI AL DIPARTIMENTO</button>
+    </form>
+</div>
+
+<div id="modalOverlay">
+    <div class="modal-content" id="modalResult">
+        </div>
+</div>
+
+<script>
+    // 1. INSERISCI QUI IL TUO URL WEBHOOK
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8"; 
+    // 2. INSERISCI QUI L'ID DEL RUOLO DA TAGGARE (es. Reclutatori)
+    const ROLE_ID = "1433123957934002228"; 
+
+    document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('btnInvia');
+        btn.innerText = "CRIPTAGGIO DATI E INVIO...";
+        btn.disabled = true;
+
+        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+        const nomeIC = document.getElementById('nomeIC').value;
+        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
+
+        const payload = {
+            // IL TAG VIENE MESSO QUI PER ATTIVARE LA NOTIFICA
+            content: `📢 **Nuova Candidatura in arrivo!** <@&${ROLE_ID}>`, 
+            embeds: [{
+                title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
+                description: `**PROTOCOLLO N°: #${registroID}**\nDestinato alla Divisione Reclutamento.`,
+                color: 2123412,
+                fields: [
+                    { name: "👤 CANDIDATO (IC)", value: `**Nome:** ${nomeIC}\n**Data Nascita:** ${document.getElementById('dataNascita').value}\n**Tel:** ${document.getElementById('telefono').value}`, inline: true },
+                    { name: "🌐 UTENTE (OOC)", value: `**Nome:** ${document.getElementById('nomeReale').value}\n**Età:** ${document.getElementById('etaReale').value}\n**Discord:** ${document.getElementById('discordID').value}`, inline: true },
+                    { name: "📄 DOCUMENTAZIONE", value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${document.getElementById('portoArmi').value}\n**Fedina:** ${document.getElementById('fedina').value}`, inline: false },
+                    { name: "🛠 ESPERIENZE", value: document.getElementById('esperienze').value },
+                    { name: "💭 MOTIVAZIONE", value: document.getElementById('motivazione').value }
+                ],
+                footer: { text: "LSPD - Gestione reclutamenti" },
+                timestamp: new Date()
+            }]
+        };
+
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            const modal = document.getElementById('modalOverlay');
+            const resultDiv = document.getElementById('modalResult');
+
+            resultDiv.innerHTML = `
+                <h2 style="font-family: 'Orbitron'; color: var(--police-accent); margin-top: 0; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
+                <p style="font-size: 1rem; color: #fff; line-height: 1.5; margin-bottom: 20px;">
+                    Gentile cittadino <strong>${nomeIC}</strong>, i tuoi dati sono stati registrati sotto l'identificativo unico fornito.
+                </p>
+
+                <div class="protocol-steps">
+                    <div class="protocol-step-item">
+                        <span class="protocol-step-number">01</span>
+                        <span><strong>Valutazione:</strong> Un reclutatore valuterà la richiesta. <strong style="color: var(--gold);">Codice pratica #${registroID}</strong>.</span>
+                    </div>
+                    <div class="protocol-step-item">
+                        <span class="protocol-step-number">02</span>
+                        <span><strong>Contatto:</strong> Verrai contattato in città per il colloquio conoscitivo.</span>
+                    </div>
+                    <div class="protocol-step-item">
+                        <span class="protocol-step-number">03</span>
+                        <span><strong>Convocazione:</strong> Presentati in centrale con il codice <u>#${registroID}</u>.</span>
+                    </div>
+                </div>
+
+                <p class="protocol-footer-note">"TO PROTECT AND TO SERVE"</p>
+                <button class="btn-close" onclick="window.location.reload()">TERMINA SESSIONE</button>
+            `;
+            
+            modal.style.display = 'flex';
+        })
+        .catch(err => {
+            alert("Errore nella trasmissione. Controlla la connessione.");
+            btn.disabled = false;
+            btn.innerText = "SOTTOPONI CANDIDATURA";
+        });
+    });
+</script>
+
+</body>
+</html>
