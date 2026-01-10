@@ -281,44 +281,6 @@
         }, 4000);
     }
 
-    // --- LOGICA DI SBLOCCO EMERGENZA (Scrivi 'sblocca' sulla tastiera per pulire il blocco) ---
-    let sbloccaKey = "";
-    window.addEventListener('keydown', (e) => {
-        sbloccaKey += e.key;
-        if (sbloccaKey.includes("sblocca")) {
-            localStorage.removeItem('lspd_hardware_lock');
-            sessionStorage.clear();
-            alert("TERMINALE SBLOCCATO - Ricarico la pagina...");
-            window.location.reload();
-        }
-    });
-
-    // --- FUNZIONE: BLOCCO HARDWARE ---
-    function checkTerminalLock() {
-        // Se l'utente ha appena inviato la candidatura, NON bloccare per fargli vedere il codice
-        if (sessionStorage.getItem('just_submitted') === 'true') {
-            return false; 
-        }
-
-        if (localStorage.getItem('lspd_hardware_lock') === 'true') {
-            const modal = document.getElementById('modalOverlay');
-            document.getElementById('modalResult').innerHTML = `
-                <h2 style="color: var(--danger); font-family: 'Orbitron';">SISTEMA BLOCCATO</h2>
-                <p>È stato rilevato un account già esistente collegato a questo terminale.</p>
-                <div style="margin: 25px 0; border: 1px solid var(--danger); padding: 15px; background: rgba(255, 68, 68, 0.05);">
-                    <p style="font-size: 0.85rem; color: #ff4444;">
-                        SICUREZZA TERMINALE: Non è consentito creare account multipli. Contatta il comando LSPD se ritieni si tratti di un errore.
-                    </p>
-                </div>
-            `;
-            modal.style.display = 'flex';
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-            return true;
-        }
-        return false;
-    }
-
     // --- CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
@@ -337,14 +299,37 @@
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
 
+    // --- LOGICA DI SICUREZZA ---
+    function checkSecurity(currentUserEmail = null) {
+        const lockedEmail = localStorage.getItem('lspd_registered_email');
+        if (lockedEmail && currentUserEmail && lockedEmail !== currentUserEmail) {
+            showHardwareBlock();
+            return true;
+        }
+        return false;
+    }
+
+    function showHardwareBlock() {
+        const modal = document.getElementById('modalOverlay');
+        document.getElementById('modalResult').innerHTML = `
+            <h2 style="color: var(--danger); font-family: 'Orbitron';">ACCESSO NEGATO</h2>
+            <p>Questo terminale è già associato a un'altra identità.</p>
+            <div style="margin: 25px 0; border: 1px solid var(--danger); padding: 15px; background: rgba(255, 68, 68, 0.05);">
+                <p style="font-size: 0.85rem; color: #ff4444;">
+                    SICUREZZA: Accedi con l'email originale: <strong>${localStorage.getItem('lspd_registered_email')}</strong>
+                </p>
+            </div>
+            <button onclick="logout()" style="background: var(--danger); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">TORNA AL LOGIN</button>
+        `;
+        modal.style.display = 'flex';
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+    }
+
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
-        // Se siamo in fase di "successo invio", non fare nulla e non bloccare
-        if (sessionStorage.getItem('just_submitted') === 'true') return;
-
-        if (checkTerminalLock()) return;
-
         if (user) {
+            if (checkSecurity(user.email)) return;
             checkUserApplication(user.uid);
         } else {
             document.getElementById('authSection').classList.remove('hidden');
@@ -356,131 +341,157 @@
     async function checkUserApplication(uid) {
         try {
             const doc = await db.collection("candidature").doc(uid).get();
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+
             if (doc.exists) {
-                const data = doc.data();
-                showExistingApp(data.protocollo);
+                showStatusPage(doc.data());
             } else {
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
                 showNotice("ACCESSO EFFETTUATO", "success");
             }
-        } catch (error) {
-            document.getElementById('mainApp').classList.remove('hidden');
-        }
+        } catch (error) { console.error(error); }
     }
 
-    function showExistingApp(protocollo) {
-        const modal = document.getElementById('modalOverlay');
-        document.getElementById('modalResult').innerHTML = `
-            <h2 style="color: var(--police-accent); font-family: 'Orbitron';">CANDIDATURA REGISTRATA</h2>
-            <div style="margin: 25px 0; border-left: 3px solid var(--police-accent); padding: 15px; text-align: left; background: rgba(255, 215, 0, 0.05);">
-                <p><strong>PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${protocollo}</span></p>
+    function showStatusPage(data) {
+        const container = document.getElementById('mainApp');
+        container.innerHTML = `
+            <button id="logoutBtn" onclick="logout()">LOGOUT</button>
+            <div class="classified-tag">File Locked</div>
+            <h1>STATO CANDIDATURA: #${data.protocollo}</h1>
+            <div style="background: rgba(0, 85, 255, 0.05); border: 1px solid var(--police-blue); padding: 25px; margin-top: 30px; text-align: center;">
+                <p style="color: var(--police-accent); font-family: 'Orbitron'; font-size: 1.2rem;">FASCICOLO IN REVISIONE</p>
+                <p>Cittadino: <strong>${data.nomeIC}</strong></p>
+                <div style="margin: 20px 0; padding: 15px; border: 1px solid rgba(0,85,255,0.3); text-align: left; font-size: 0.9rem;">
+                    <p>• Conserva il protocollo: <strong>#${data.protocollo}</strong></p>
+                    <p>• Se risulterai idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.</p>
+                    <p>• In caso di convocazione, presentati in centrale fornendo il codice al reclutatore.</p>
+                </div>
+                <p style="font-size: 0.75rem; color: #777; font-style: italic;">Inviata il: ${data.dataInvio}</p>
             </div>
-            <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">ESCI</button>
         `;
-        modal.style.display = 'flex';
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
     }
 
+    // --- AZIONI FORM ---
     function toggleAuth() {
-        if (checkTerminalLock()) return;
+        if (localStorage.getItem('lspd_registered_email')) {
+            showNotice("Dispositivo già associato a un account.", "error");
+            return;
+        }
         document.getElementById('loginForm').classList.toggle('hidden');
         document.getElementById('registerForm').classList.toggle('hidden');
-        document.getElementById('authTitle').innerText = document.getElementById('loginForm').classList.contains('hidden') ? "REGISTRAZIONE" : "ACCESSO TERMINALE";
     }
 
     document.getElementById('loginForm').addEventListener('submit', e => {
         e.preventDefault();
-        const btn = document.getElementById('btnLogin');
-        btn.innerText = "VERIFICA...";
-        btn.disabled = true;
         auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
-            .catch(err => {
-                showNotice("CREDENZIALI ERRATE", "error");
-                btn.innerText = "AUTENTICAZIONE";
-                btn.disabled = false;
-            });
+            .catch(() => showNotice("Credenziali errate", "error"));
     });
 
     document.getElementById('registerForm').addEventListener('submit', e => {
         e.preventDefault();
-        auth.createUserWithEmailAndPassword(document.getElementById('regEmail').value, document.getElementById('regPassword').value)
-            .then(() => showNotice("ACCOUNT CREATO", "success"))
-            .catch(err => showNotice("ERRORE: " + err.message, "error"));
+        const email = document.getElementById('regEmail').value;
+        auth.createUserWithEmailAndPassword(email, document.getElementById('regPassword').value)
+            .then(() => {
+                localStorage.setItem('lspd_registered_email', email);
+                showNotice("Account registrato", "success");
+            })
+            .catch(err => showNotice(err.message, "error"));
     });
 
-    function logout() {
-        auth.signOut().then(() => {
-            window.location.reload();
-        });
-    }
-
-    function setLockAndLogout() {
-        localStorage.setItem('lspd_hardware_lock', 'true');
-        sessionStorage.removeItem('just_submitted');
-        logout();
-    }
+    function logout() { auth.signOut().then(() => window.location.reload()); }
 
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnInvia');
-        const discordIDValue = document.getElementById('discordID').value;
         btn.disabled = true;
-        btn.innerText = "INVIO IN CORSO...";
+        btn.innerText = "TRASMISSIONE...";
+
+        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(el => el.value).join(", ");
+        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+
+        const formData = {
+            protocollo: registroID,
+            nomeReale: document.getElementById('nomeReale').value,
+            etaReale: document.getElementById('etaReale').value,
+            discordID: document.getElementById('discordID').value,
+            nomeIC: document.getElementById('nomeIC').value,
+            dataNascita: document.getElementById('dataNascita').value,
+            telefono: document.getElementById('telefono').value,
+            portoArmi: document.getElementById('portoArmi').value,
+            patenti: patenti || "Nessuna",
+            fedina: document.getElementById('fedina').value,
+            esperienze: document.getElementById('esperienze').value,
+            motivazione: document.getElementById('motivazione').value,
+            dataInvio: new Date().toLocaleString(),
+            email: auth.currentUser.email
+        };
 
         try {
-            const checkID = await db.collection("candidature").where("discordID", "==", discordIDValue).get();
+            // Verifica duplicato Discord
+            const checkID = await db.collection("candidature").where("discordID", "==", formData.discordID).get();
             if (!checkID.empty) {
-                showNotice("DISCORD ID GIÀ USATO", "error");
+                showNotice("Discord ID già registrato", "error");
                 btn.disabled = false;
                 return;
             }
 
-            const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
-            
-            // 1. SETTIAMO IL FLAG PRIMA DI SCRIVERE SUL DB
-            sessionStorage.setItem('just_submitted', 'true');
+            // Salva su Database
+            await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
 
-            await db.collection("candidature").doc(auth.currentUser.uid).set({
-                protocollo: registroID,
-                email: auth.currentUser.email,
-                discordID: discordIDValue,
-                dataInvio: new Date().toLocaleString()
-            });
-
-            // Invio Webhook...
+            // Webhook Completo
             await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    content: `📢 **Nuova Candidatura!** ${ROLE_TAGS}`,
-                    embeds: [{ title: "🚨 NUOVO ARRUOLAMENTO", description: `**PROTOCOLLO: #${registroID}**\n**Discord:** ${discordIDValue}`, color: 2123412 }]
+                    content: `🚨 **NUOVA CANDIDATURA RICEVUTA** ${ROLE_TAGS}`,
+                    embeds: [{
+                        title: `FASCICOLO ARRUOLAMENTO #${registroID}`,
+                        color: 2123412,
+                        fields: [
+                            { name: "👤 Info OOC", value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, inline: true },
+                            { name: "📋 Info IC", value: `**Nome:** ${formData.nomeIC}\n**Data Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, inline: true },
+                            { name: "🛡️ Stato Legale", value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}` },
+                            { name: "💼 Esperienze", value: formData.esperienze },
+                            { name: "🎯 Motivazione", value: formData.motivazione }
+                        ],
+                        footer: { text: `Inviata da: ${formData.email} | Data: ${formData.dataInvio}` }
+                    }]
                 })
             });
 
+            // Mostra Modal di Successo Finale
             document.getElementById('modalResult').innerHTML = `
                 <h2 style="color: var(--police-accent); font-family: 'Orbitron';">INVIO COMPLETATO</h2>
-                <div style="margin: 20px 0; border: 1px solid var(--police-blue); padding: 15px; background: rgba(0,85,255,0.1);">
-                    <p>PROTOCOLLO: <strong>#${registroID}</strong></p>
-                    <p style="font-size:0.8rem;">Copia il codice prima di chiudere.</p>
+                <div style="margin: 20px 0; border: 1px solid var(--police-blue); padding: 15px; background: rgba(0,85,255,0.1); text-align: left;">
+                    <p style="font-size: 1.1rem; text-align:center;">PROTOCOLLO: <strong>#${registroID}</strong></p>
+                    <hr style="border: 0; border-top: 1px solid var(--police-blue); margin: 15px 0;">
+                    <p style="font-size: 0.9rem;">1. **Conserva questo codice**, ti servirà per i prossimi step.</p>
+                    <p style="font-size: 0.9rem;">2. Se idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.</p>
+                    <p style="font-size: 0.9rem;">3. Dovrai recarti in centrale con il codice protocollo da fornire a un reclutatore.</p>
                 </div>
-                <button onclick="setLockAndLogout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">SALVA E ESCI</button>
+                <button onclick="window.location.reload()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">HO CAPITO</button>
             `;
             document.getElementById('modalOverlay').style.display = 'flex';
 
         } catch (error) {
-            console.error(error);
-            showNotice("ERRORE INVIO", "error");
+            showNotice("Errore durante l'invio", "error");
             btn.disabled = false;
         }
     });
 
-    // Controllo iniziale
-    checkTerminalLock();
+    let sKey = "";
+    window.addEventListener('keydown', (e) => {
+        sKey += e.key;
+        if (sKey.includes("sbloccatutto")) {
+            localStorage.clear();
+            alert("Memoria pulita.");
+            window.location.reload();
+        }
+    });
 </script>
 </body>
 </html>
+
 
 
 
