@@ -357,58 +357,106 @@
         });
     }
 
-    // Invio Bando
-    document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnInvia');
-        btn.innerText = "CRIPTAGGIO E INVIO...";
-        btn.disabled = true;
+// Invio Bando Aggiornato
+    document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnInvia');
+        btn.innerText = "CRIPTAGGIO E INVIO...";
+        btn.disabled = true;
 
-        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
-        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
+        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
 
-        const payload = {
-            content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
-            embeds: [{
-                title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
-                description: `**PROTOCOLLO N°: #${registroID}**`,
-                color: 2123412,
-                fields: [
-                    { name: "👤 CANDIDATO (IC)", value: `**Nome:** ${document.getElementById('nomeIC').value}\n**Tel:** ${document.getElementById('telefono').value}`, inline: true },
-                    { name: "🌐 UTENTE (OOC)", value: `**Discord:** ${document.getElementById('discordID').value}`, inline: true },
-                    { name: "📄 DOCUMENTAZIONE", value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${document.getElementById('portoArmi').value}\n**Fedina:** ${document.getElementById('fedina').value}`, inline: false },
-                    { name: "🎯 MOTIVAZIONE", value: document.getElementById('motivazione').value }
-                ],
-                footer: { text: "LSPD Recruitment System" },
-                timestamp: new Date()
-            }]
+        // Recupero tutti i valori dai campi
+        const data = {
+            nomeReale: document.getElementById('nomeReale').value,
+            etaReale: document.getElementById('etaReale').value,
+            discordID: document.getElementById('discordID').value,
+            nomeIC: document.getElementById('nomeIC').value,
+            dataNascita: document.getElementById('dataNascita').value,
+            telefono: document.getElementById('telefono').value,
+            portoArmi: document.getElementById('portoArmi').value,
+            fedina: document.getElementById('fedina').value,
+            esperienze: document.getElementById('esperienze').value,
+            motivazione: document.getElementById('motivazione').value
         };
 
-        fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).then(() => {
+        const payload = {
+            content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
+            embeds: [{
+                title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
+                description: `**PROTOCOLLO N°: #${registroID}**`,
+                color: 2123412,
+                fields: [
+                    { 
+                        name: "🌐 INFORMAZIONI OOC", 
+                        value: `**Nome:** ${data.nomeReale}\n**Età:** ${data.etaReale}\n**Discord:** ${data.discordID}`, 
+                        inline: false 
+                    },
+                    { 
+                        name: "👤 DATI IDENTITÀ (IC)", 
+                        value: `**Nominativo:** ${data.nomeIC}\n**Data di Nascita:** ${data.dataNascita}\n**Telefono:** ${data.telefono}`, 
+                        inline: false 
+                    },
+                    { 
+                        name: "📄 DOCUMENTAZIONE E FEDINA", 
+                        value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${data.portoArmi}\n**Fedina Penale:** ${data.fedina}`, 
+                        inline: false 
+                    },
+                    { 
+                        name: "📜 ESPERIENZE PREGRESSE", 
+                        value: data.esperienze || "Nessuna indicata" 
+                    },
+                    { 
+                        name: "🎯 MOTIVAZIONE", 
+                        value: data.motivazione 
+                    }
+                ],
+                footer: { text: "LSPD Central Registry - Fusion Eternal" },
+                timestamp: new Date()
+            }]
+        };
+
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+}).then(() => {
             showNotice("DATI TRASMESSI AL DATABASE LSPD", "success");
             const modal = document.getElementById('modalOverlay');
+            
             document.getElementById('modalResult').innerHTML = `
-                <h2 style="color: var(--police-accent); font-family: 'Orbitron';">REPORT ARCHIVIATO</h2>
-                <p>Cittadino, la tua richiesta è stata trasmessa correttamente.</p>
-                <div style="margin: 20px 0; border-left: 3px solid var(--police-blue); padding-left: 15px; text-align: left;">
-                    <p><strong>Codice Protocollo:</strong> #${registroID}</p>
-                    <p><strong>Status:</strong> In Attesa</p>
+                <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
+                <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
+                
+                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 10px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
+                    <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
+                    <p style="font-size: 0.85rem; color: #fff; margin-top: 10px;">
+                        ⚠️ <strong>CONSERVA QUESTO CODICE:</strong> Ti servirà obbligatoriamente per gli step successivi della selezione.
+                    </p>
+                    <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
+                        Verrai contattato in città tramite il <strong>numero di telefono</strong> fornito (assicurati che sia corretto) o tramite il <strong>giornalino statale</strong>.
+                    </p>
+                    <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
+                        Dopo la convocazione ufficiale, dovrai recarti in Centrale e presentare il codice protocollo sopra indicato all'ufficiale di turno.
+                    </p>
                 </div>
-                <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">CHIUDI E TORNA AL LOGIN</button>
+                
+                <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold; transition: 0.3s;" onmouseover="this.style.background='#0044cc'" onmouseout="this.style.background='var(--police-blue)'">
+                    CHIUDI E TORNA AL LOGIN
+                </button>
             `;
+            
             modal.style.display = 'flex';
             btn.innerText = "TRASMETTI AL DIPARTIMENTO";
             btn.disabled = false;
-        }).catch(err => {
-            showNotice("ERRORE DI TRASMISSIONE DATI", "error");
-            btn.disabled = false;
-            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
-        });
-    });
+        }).catch(err => {
+            showNotice("ERRORE DI TRASMISSIONE DATI", "error");
+            btn.disabled = false;
+            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
+        });
+    });
 </script>
 </body>
 </html>
+
