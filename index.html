@@ -90,14 +90,15 @@
         
         label { display: block; color: var(--police-accent); font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;}
         
-        input, textarea, select {
+        /* Stile Input e Textarea */
+        input[type="text"], input[type="number"], textarea, select {
             width: 100%; padding: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 85, 255, 0.3); color: white;
             font-family: 'Barlow Condensed'; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
-            appearance: none;
         }
 
-        /* FIX LEGGIBILITÀ SELECT */
+        /* FIX: Rimosso appearance:none dai tipi generici per far funzionare le checkbox */
         select {
+            appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 15px center;
@@ -105,10 +106,7 @@
             cursor: pointer;
         }
 
-        select option {
-            background-color: #0d1117;
-            color: white;
-        }
+        select option { background-color: #0d1117; color: white; }
 
         input:focus, textarea:focus, select:focus { 
             border-color: var(--police-accent); 
@@ -117,13 +115,20 @@
             box-shadow: 0 0 10px var(--neon-glow);
         }
 
+        /* STILE CHECKBOX PATENTI */
         .checkbox-group { 
-            display: flex; gap: 15px; background: rgba(0, 85, 255, 0.05); padding: 10px; 
+            display: flex; gap: 15px; background: rgba(0, 85, 255, 0.05); padding: 12px; 
             border: 1px solid rgba(0, 85, 255, 0.2); flex-wrap: wrap;
         }
 
-        .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 1rem; color: #fff; }
-        .checkbox-group input { width: auto; accent-color: var(--police-blue); }
+        .checkbox-group label { 
+            display: flex; align-items: center; gap: 10px; cursor: pointer; 
+            text-transform: none; font-size: 1.1rem; color: #fff; 
+        }
+
+        .checkbox-group input[type="checkbox"] { 
+            width: 18px; height: 18px; cursor: pointer; accent-color: var(--police-blue);
+        }
 
         button {
             width: 100%; padding: 18px; background: var(--police-dark); color: white; border: 1px solid var(--police-blue);
@@ -138,27 +143,11 @@
         }
 
         .main-footer {
-            width: 100%;
-            padding: 20px 0;
-            background: rgba(5, 7, 10, 0.95);
-            border-top: 1px solid var(--police-blue);
-            text-align: center;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 -5px 15px var(--neon-glow);
-            z-index: 100;
+            width: 100%; padding: 20px 0; background: rgba(5, 7, 10, 0.95);
+            border-top: 1px solid var(--police-blue); text-align: center;
+            position: fixed; bottom: 0; left: 0; backdrop-filter: blur(10px);
+            box-shadow: 0 -5px 15px var(--neon-glow); z-index: 100;
         }
-
-        .footer-text {
-            font-family: 'Orbitron';
-            font-size: 0.7rem;
-            letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .footer-text span { color: var(--police-accent); }
 
         #modalOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -168,12 +157,6 @@
         .modal-content {
             background: #0d1117; border: 1px solid var(--police-blue); width: 90%; max-width: 550px;
             padding: 40px; position: relative; box-shadow: 0 0 40px var(--neon-glow);
-        }
-
-        .protocol-step-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; font-size: 1rem; }
-        .protocol-step-number {
-            background: var(--police-blue); color: white; font-family: 'Orbitron';
-            padding: 4px 8px; font-weight: bold; font-size: 0.8rem; border-radius: 2px;
         }
 
         @media (max-width: 600px) {
@@ -241,8 +224,8 @@
 </div>
 
 <footer class="main-footer">
-    <div class="footer-text">
-        © 2026 <span>LOS SANTOS POLICE DEPARTMENT</span> — PROTOCOLLO FUSION ETERNAL
+    <div class="footer-text" style="color: rgba(255,255,255,0.7); font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 2px;">
+        © 2026 <span style="color: var(--police-accent);">LOS SANTOS POLICE DEPARTMENT</span> — PROTOCOLLO FUSION ETERNAL
     </div>
 </footer>
 
@@ -252,7 +235,6 @@
 
 <script>
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8"; 
-    // TAG DEI 3 RUOLI RICHIESTI
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>"; 
 
     document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
@@ -270,14 +252,15 @@
             content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`, 
             embeds: [{
                 title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
-                description: `**PROTOCOLLO N°: #${registroID}**\nDestinato alla Divisione Reclutamento.`,
+                description: `**PROTOCOLLO N°: #${registroID}**`,
                 color: 2123412,
                 fields: [
                     { name: "👤 CANDIDATO (IC)", value: `**Nome:** ${nomeIC}\n**Data Nascita:** ${document.getElementById('dataNascita').value}\n**Tel:** ${document.getElementById('telefono').value}`, inline: true },
                     { name: "🌐 UTENTE (OOC)", value: `**Nome:** ${document.getElementById('nomeReale').value}\n**Età:** ${document.getElementById('etaReale').value}\n**Discord:** ${document.getElementById('discordID').value}`, inline: true },
                     { name: "📄 DOCUMENTAZIONE", value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${document.getElementById('portoArmi').value}\n**Fedina:** ${document.getElementById('fedina').value}`, inline: false },
                     { name: "🛠 ESPERIENZE", value: document.getElementById('esperienze').value },
-                    { name: "💭 MOTIVAZIONE", value: document.getElementById('motivazione').value }
+                    { name: "💭 DESCRIZIONE", value: document.getElementById('descrizione').value },
+                    { name: "🎯 MOTIVAZIONE", value: document.getElementById('motivazione').value }
                 ],
                 footer: { text: "LSPD - Gestione reclutamenti" },
                 timestamp: new Date()
@@ -294,26 +277,14 @@
             const resultDiv = document.getElementById('modalResult');
 
             resultDiv.innerHTML = `
-                <h2 style="font-family: 'Orbitron'; color: var(--police-accent); margin-top: 0; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
-                <p style="font-size: 1rem; color: #fff; line-height: 1.5; margin-bottom: 20px;">
-                    Gentile cittadino <strong>${nomeIC}</strong>, i tuoi dati sono stati registrati.
-                </p>
-
-                <div class="protocol-steps">
-                    <div class="protocol-step-item">
-                        <span class="protocol-step-number">01</span>
-                        <span><strong>Valutazione:</strong> Un reclutatore valuterà la richiesta. <strong style="color: var(--gold);">Pratica #${registroID}</strong>.</span>
-                    </div>
-                    <div class="protocol-step-item">
-                        <span class="protocol-step-number">02</span>
-                        <span><strong>Contatto:</strong> Verrai contattato in città tramite contatto telefonico o convocazione (giornalino).</span>
-                    </div>
+                <h2 style="font-family: 'Orbitron'; color: var(--police-accent); margin-top: 0;">REPORT ARCHIVIATO</h2>
+                <p style="color: #fff; line-height: 1.5;">Cittadino <strong>${nomeIC}</strong>, i tuoi dati sono stati registrati.</p>
+                <div style="margin: 20px 0; border-left: 3px solid var(--police-blue); padding-left: 15px;">
+                    <p><strong>Status:</strong> In valutazione</p>
+                    <p><strong>Codice:</strong> #${registroID}</p>
                 </div>
-
-                <p style="text-align:center; color: var(--police-accent); font-family:'Orbitron'; font-size:0.8rem;">"TO PROTECT AND TO SERVE"</p>
-                <button class="btn-close" onclick="window.location.reload()">CHIUDI SESSIONE</button>
+                <button style="width:100%; padding:10px; background:var(--police-blue); color:white; border:none; cursor:pointer; font-family:'Orbitron';" onclick="window.location.reload()">TERMINA SESSIONE</button>
             `;
-            
             modal.style.display = 'flex';
         })
         .catch(err => {
