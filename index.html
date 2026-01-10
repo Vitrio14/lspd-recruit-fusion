@@ -281,6 +281,27 @@
         }, 4000);
     }
 
+    // --- NUOVA FUNZIONE: BLOCCO HARDWARE ---
+    function checkTerminalLock() {
+        if (localStorage.getItem('lspd_hardware_lock')) {
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalResult').innerHTML = `
+                <h2 style="color: var(--danger); font-family: 'Orbitron';">SISTEMA BLOCCATO</h2>
+                <p>È stato rilevato un account già esistente collegato a questo terminale.</p>
+                <div style="margin: 25px 0; border: 1px solid var(--danger); padding: 15px; background: rgba(255, 68, 68, 0.05);">
+                    <p style="font-size: 0.85rem; color: #ff4444;">
+                        POLIZIA DI SICUREZZA: Non è consentito creare account multipli. Contatta un amministratore se ritieni si tratti di un errore.
+                    </p>
+                </div>
+            `;
+            modal.style.display = 'flex';
+            authSection.classList.add('hidden');
+            mainApp.classList.add('hidden');
+            return true;
+        }
+        return false;
+    }
+
     // --- CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
@@ -307,6 +328,8 @@
 
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
+        if (checkTerminalLock()) return; // Blocca se c'è il marchio hardware
+
         if (user) {
             checkUserApplication(user.uid);
         } else {
@@ -353,6 +376,7 @@
 
     // --- LOGICA AUTH ---
     function toggleAuth() {
+        if (checkTerminalLock()) return;
         loginForm.classList.toggle('hidden');
         registerForm.classList.toggle('hidden');
         document.getElementById('authTitle').innerText = loginForm.classList.contains('hidden') ? "REGISTRAZIONE" : "ACCESSO TERMINALE";
@@ -387,32 +411,47 @@
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnInvia');
-        btn.innerText = "TRASMISSIONE IN CORSO...";
+        const discordIDValue = document.getElementById('discordID').value;
+        
+        btn.innerText = "VERIFICA INTEGRITÀ...";
         btn.disabled = true;
 
-        const user = auth.currentUser;
-        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
-        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
-
-        const formData = {
-            nomeReale: document.getElementById('nomeReale').value,
-            etaReale: document.getElementById('etaReale').value,
-            discordID: document.getElementById('discordID').value,
-            nomeIC: document.getElementById('nomeIC').value,
-            dataNascita: document.getElementById('dataNascita').value,
-            telefono: document.getElementById('telefono').value,
-            portoArmi: document.getElementById('portoArmi').value,
-            fedina: document.getElementById('fedina').value,
-            esperienze: document.getElementById('esperienze').value,
-            motivazione: document.getElementById('motivazione').value
-        };
-
         try {
+            // --- NUOVO: CONTROLLO CROSS-ACCOUNT DISCORD ID ---
+            const checkID = await db.collection("candidature").where("discordID", "==", discordIDValue).get();
+            if (!checkID.empty) {
+                showNotice("ID DISCORD GIÀ PRESENTE IN ARCHIVIO", "error");
+                btn.disabled = false;
+                btn.innerText = "TRASMETTI AL DIPARTIMENTO";
+                return;
+            }
+
+            const user = auth.currentUser;
+            const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+            const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
+
+            const formData = {
+                nomeReale: document.getElementById('nomeReale').value,
+                etaReale: document.getElementById('etaReale').value,
+                discordID: discordIDValue,
+                nomeIC: document.getElementById('nomeIC').value,
+                dataNascita: document.getElementById('dataNascita').value,
+                telefono: document.getElementById('telefono').value,
+                portoArmi: document.getElementById('portoArmi').value,
+                fedina: document.getElementById('fedina').value,
+                esperienze: document.getElementById('esperienze').value,
+                motivazione: document.getElementById('motivazione').value
+            };
+
             await db.collection("candidature").doc(user.uid).set({
                 protocollo: registroID,
                 email: user.email,
+                discordID: formData.discordID, // Importante per il controllo futuro
                 dataInvio: new Date().toLocaleString()
             });
+
+            // BLOCCO HARDWARE DOPO INVIO RIUSCITO
+            localStorage.setItem('lspd_hardware_lock', 'true');
 
             const payload = {
                 content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
@@ -441,14 +480,11 @@
             showNotice("DATABASE AGGIORNATO", "success");
             const modal = document.getElementById('modalOverlay');
             
-            // AGGIORNAMENTO TESTO MODAL RICHIESTO
             document.getElementById('modalResult').innerHTML = `
                 <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
                 <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
-                
                 <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
                     <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
-                    
                     <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
                         ⚠️ <strong>AZIONI RICHIESTE:</strong>
                     </p>
@@ -458,7 +494,6 @@
                         <li>Dovrai recarti in centrale con il codice protocollo e chiedere di poter parlare con un <strong>reclutatore</strong>.</li>
                     </ul>
                 </div>
-                
                 <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
                     CHIUDI E TORNA AL LOGIN
                 </button>
@@ -472,6 +507,9 @@
             btn.innerText = "TRASMETTI AL DIPARTIMENTO";
         }
     });
+
+    // Controllo iniziale
+    checkTerminalLock();
 </script>
 </body>
 </html>
