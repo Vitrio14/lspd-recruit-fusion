@@ -34,7 +34,6 @@
 
         .police-logo { width: 120px; margin-top: 30px; filter: drop-shadow(0 0 15px var(--neon-glow)); z-index: 5; }
 
-        /* --- STILE NOTIFICHE (TOASTS) --- */
         #notification-container {
             position: fixed;
             top: 20px;
@@ -73,8 +72,6 @@
         @keyframes fadeOut {
             to { transform: translateX(20px); opacity: 0; }
         }
-
-        /* --- FINE STILE NOTIFICHE --- */
 
         .container, .auth-container {
             width: 90%;
@@ -268,6 +265,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
     // --- FUNZIONE NOTIFICHE ---
@@ -276,9 +274,7 @@
         const notice = document.createElement('div');
         notice.className = `notice ${type}`;
         notice.innerHTML = `<span>${message}</span>`;
-        
         container.appendChild(notice);
-
         setTimeout(() => {
             notice.style.animation = "fadeOut 0.5s ease forwards";
             setTimeout(() => notice.remove(), 500);
@@ -298,6 +294,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
@@ -308,12 +305,10 @@
     const registerForm = document.getElementById('registerForm');
     const btnLogin = document.getElementById('btnLogin');
 
-    // Controllo Stato Sessione
+    // Controllo Stato Sessione e Esistenza Candidatura
     auth.onAuthStateChanged(user => {
         if (user) {
-            authSection.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            showNotice("SISTEMA ACCESSO: UTENTE AUTENTICATO", "success");
+            checkUserApplication(user.uid);
         } else {
             authSection.classList.remove('hidden');
             mainApp.classList.add('hidden');
@@ -322,13 +317,48 @@
         }
     });
 
+    async function checkUserApplication(uid) {
+        try {
+            const doc = await db.collection("candidature").doc(uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                showExistingApp(data.protocollo);
+            } else {
+                authSection.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                showNotice("SISTEMA ACCESSO: UTENTE AUTENTICATO", "success");
+            }
+        } catch (error) {
+            console.error(error);
+            authSection.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+        }
+    }
+
+    function showExistingApp(protocollo) {
+        const modal = document.getElementById('modalOverlay');
+        document.getElementById('modalResult').innerHTML = `
+            <h2 style="color: var(--police-accent); font-family: 'Orbitron';">CANDIDATURA GIÀ INVIATA</h2>
+            <p>Risulta già un fascicolo a tuo nome nel nostro database.</p>
+            <div style="margin: 25px 0; border-left: 3px solid var(--police-accent); padding: 15px; text-align: left; background: rgba(255, 215, 0, 0.05);">
+                <p><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${protocollo}</span></p>
+                <p style="font-size: 0.9rem; color: #ccc; margin-top: 15px;">
+                    Hai già effettuato la candidatura. Dovrai aspettare la valutazione e verrai contattato per l'esito tramite il numero di telefono fornito o il giornalino statale.
+                </p>
+            </div>
+            <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">ESCI DAL SISTEMA</button>
+        `;
+        modal.style.display = 'flex';
+        authSection.classList.add('hidden');
+        mainApp.classList.add('hidden');
+    }
+
     function toggleAuth() {
         loginForm.classList.toggle('hidden');
         registerForm.classList.toggle('hidden');
         document.getElementById('authTitle').innerText = loginForm.classList.contains('hidden') ? "REGISTRAZIONE" : "ACCESSO TERMINALE";
     }
 
-    // Login
     loginForm.addEventListener('submit', e => {
         e.preventDefault();
         btnLogin.innerText = "VERIFICA IN CORSO...";
@@ -341,12 +371,16 @@
             });
     });
 
-    // Registrazione
     registerForm.addEventListener('submit', e => {
         e.preventDefault();
+        const btn = document.getElementById('btnRegister');
+        btn.disabled = true;
         auth.createUserWithEmailAndPassword(document.getElementById('regEmail').value, document.getElementById('regPassword').value)
             .then(() => showNotice("ACCOUNT CREATO - BENVENUTO", "success"))
-            .catch(err => showNotice("ERRORE: " + err.message, "error"));
+            .catch(err => {
+                showNotice("ERRORE: " + err.message, "error");
+                btn.disabled = false;
+            });
     });
 
     function logout() {
@@ -357,17 +391,18 @@
         });
     }
 
-// Invio Bando Aggiornato
-    document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnInvia');
-        btn.innerText = "CRIPTAGGIO E INVIO...";
-        btn.disabled = true;
+    document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnInvia');
+        btn.innerText = "CRIPTAGGIO E INVIO...";
+        btn.disabled = true;
 
-        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
-        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
+        const user = auth.currentUser;
+        if(!user) return;
 
-        // Recupero tutti i valori dai campi
+        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
+
         const data = {
             nomeReale: document.getElementById('nomeReale').value,
             etaReale: document.getElementById('etaReale').value,
@@ -381,82 +416,50 @@
             motivazione: document.getElementById('motivazione').value
         };
 
-        const payload = {
-            content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
-            embeds: [{
-                title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
-                description: `**PROTOCOLLO N°: #${registroID}**`,
-                color: 2123412,
-                fields: [
-                    { 
-                        name: "🌐 INFORMAZIONI OOC", 
-                        value: `**Nome:** ${data.nomeReale}\n**Età:** ${data.etaReale}\n**Discord:** ${data.discordID}`, 
-                        inline: false 
-                    },
-                    { 
-                        name: "👤 DATI IDENTITÀ (IC)", 
-                        value: `**Nominativo:** ${data.nomeIC}\n**Data di Nascita:** ${data.dataNascita}\n**Telefono:** ${data.telefono}`, 
-                        inline: false 
-                    },
-                    { 
-                        name: "📄 DOCUMENTAZIONE E FEDINA", 
-                        value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${data.portoArmi}\n**Fedina Penale:** ${data.fedina}`, 
-                        inline: false 
-                    },
-                    { 
-                        name: "📜 ESPERIENZE PREGRESSE", 
-                        value: data.esperienze || "Nessuna indicata" 
-                    },
-                    { 
-                        name: "🎯 MOTIVAZIONE", 
-                        value: data.motivazione 
-                    }
-                ],
-                footer: { text: "LSPD Central Registry - Fusion Eternal" },
-                timestamp: new Date()
-            }]
-        };
+        try {
+            // 1. Salva nel Database Firestore
+            await db.collection("candidature").doc(user.uid).set({
+                protocollo: registroID,
+                email: user.email,
+                dataInvio: new Date().toLocaleString()
+            });
 
-        fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-}).then(() => {
-            showNotice("DATI TRASMESSI AL DATABASE LSPD", "success");
-            const modal = document.getElementById('modalOverlay');
-            
-            document.getElementById('modalResult').innerHTML = `
-                <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
-                <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
-                
-                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 10px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
-                    <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
-                    <p style="font-size: 0.85rem; color: #fff; margin-top: 10px;">
-                        ⚠️ <strong>CONSERVA QUESTO CODICE:</strong> Ti servirà obbligatoriamente per gli step successivi della selezione.
-                    </p>
-                    <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
-                        Verrai contattato in città tramite il <strong>numero di telefono</strong> fornito (assicurati che sia corretto) o tramite il <strong>giornalino statale</strong>.
-                    </p>
-                    <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
-                        Dopo la convocazione ufficiale, dovrai recarti in Centrale e presentare il codice protocollo sopra indicato all'ufficiale di turno.
-                    </p>
-                </div>
-                
-                <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold; transition: 0.3s;" onmouseover="this.style.background='#0044cc'" onmouseout="this.style.background='var(--police-blue)'">
-                    CHIUDI E TORNA AL LOGIN
-                </button>
-            `;
-            
-            modal.style.display = 'flex';
-            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
+            // 2. Invia a Discord
+            const payload = {
+                content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
+                embeds: [{
+                    title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
+                    description: `**PROTOCOLLO N°: #${registroID}**`,
+                    color: 2123412,
+                    fields: [
+                        { name: "🌐 INFORMAZIONI OOC", value: `**Nome:** ${data.nomeReale}\n**Età:** ${data.etaReale}\n**Discord:** ${data.discordID}`, inline: false },
+                        { name: "👤 DATI IDENTITÀ (IC)", value: `**Nominativo:** ${data.nomeIC}\n**Data di Nascita:** ${data.dataNascita}\n**Telefono:** ${data.telefono}`, inline: false },
+                        { name: "📄 DOCUMENTAZIONE E FEDINA", value: `**Patenti:** ${patenti}\n**Porto d'Armi:** ${data.portoArmi}\n**Fedina Penale:** ${data.fedina}`, inline: false },
+                        { name: "📜 ESPERIENZE PREGRESSE", value: data.esperienze || "Nessuna indicata" },
+                        { name: "🎯 MOTIVAZIONE", value: data.motivazione }
+                    ],
+                    footer: { text: "LSPD Central Registry - ID: " + user.uid },
+                    timestamp: new Date()
+                }]
+            };
+
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            // 3. Mostra successo
+            showNotice("DATI TRASMESSI CON SUCCESSO", "success");
+            showExistingApp(registroID);
+
+        } catch (error) {
+            console.error(error);
+            showNotice("ERRORE DURANTE IL SALVATAGGIO", "error");
             btn.disabled = false;
-        }).catch(err => {
-            showNotice("ERRORE DI TRASMISSIONE DATI", "error");
-            btn.disabled = false;
-            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
-        });
-    });
+            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
+        }
+    });
 </script>
 </body>
 </html>
-
