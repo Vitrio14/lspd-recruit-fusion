@@ -407,6 +407,12 @@
         });
     }
 
+    function setLockAndLogout() {
+    // Imposta il blocco hardware solo nel momento in cui l'utente preme il tasto per uscire
+    localStorage.setItem('lspd_hardware_lock', 'true');
+    logout();
+}
+
     // --- LOGICA INVIO CANDIDATURA ---
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -450,8 +456,6 @@
                 dataInvio: new Date().toLocaleString()
             });
 
-            // BLOCCO HARDWARE DOPO INVIO RIUSCITO
-            localStorage.setItem('lspd_hardware_lock', 'true');
 
             const payload = {
                 content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
@@ -480,24 +484,25 @@
             showNotice("DATABASE AGGIORNATO", "success");
             const modal = document.getElementById('modalOverlay');
             
-            document.getElementById('modalResult').innerHTML = `
-                <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
-                <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
-                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
-                    <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
-                    <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                        ⚠️ <strong>AZIONI RICHIESTE:</strong>
-                    </p>
-                    <ul style="font-size: 0.85rem; color: #ccc; padding-left: 20px; line-height: 1.4;">
-                        <li>Conserva il Codice Protocollo: è indispensabile per la selezione.</li>
-                        <li>Se idoneo, verrai contattato tramite <strong>recapito telefonico</strong> o <strong>giornalino statale</strong>.</li>
-                        <li>Dovrai recarti in centrale con il codice protocollo e chiedere di poter parlare con un <strong>reclutatore</strong>.</li>
-                    </ul>
-                </div>
-                <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
-                    CHIUDI E TORNA AL LOGIN
-                </button>
-            `;
+// SOSTITUISCI il blocco innerHTML del successo con questo:
+document.getElementById('modalResult').innerHTML = `
+    <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
+    <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
+    <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
+        <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
+        <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            ⚠️ <strong>AZIONI RICHIESTE:</strong>
+        </p>
+        <ul style="font-size: 0.85rem; color: #ccc; padding-left: 20px; line-height: 1.4;">
+            <li>Conserva il Codice Protocollo: è indispensabile per la selezione.</li>
+            <li>Se idoneo, verrai contattato tramite <strong>recapito telefonico</strong> o <strong>giornalino statale</strong>.</li>
+            <li>Dovrai recarti in centrale con il codice protocollo e chiedere di poter parlare con un <strong>reclutatore</strong>.</li>
+        </ul>
+    </div>
+    <button onclick="setLockAndLogout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
+        CHIUDI E TORNA AL LOGIN
+    </button>
+`;
             modal.style.display = 'flex';
 
         } catch (error) {
@@ -513,3 +518,4 @@
 </script>
 </body>
 </html>
+
