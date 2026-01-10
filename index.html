@@ -207,6 +207,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
+    // CONFIGURAZIONE
     const ADMIN_EMAIL = "lspd-reclutatori@fusion.it";
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
@@ -227,15 +228,12 @@
 
     // --- FUNZIONI DI SICUREZZA ---
     function checkSecurity(email) {
-        // BYPASS ADMIN: Se l'admin accede, ignora il blocco hardware
         if (email === ADMIN_EMAIL) {
             console.log("Accesso Admin: Sicurezza bypassata.");
             return false; 
         }
 
         const locked = localStorage.getItem('lspd_registered_email');
-        
-        // VINCOLO CIVILE: Se il PC è bloccato su un'altra email
         if (locked && locked !== email) {
             document.getElementById('modalResult').innerHTML = `
                 <div style="padding:20px;">
@@ -251,7 +249,7 @@
         return false;
     }
 
-    // --- FUNZIONE SEGRETA RESET (3 VOLTE ESC) ---
+    // --- RESET SEGRETO (3 VOLTE ESC) ---
     let escCount = 0;
     window.addEventListener('keydown', (e) => {
         if (e.key === "Escape") {
@@ -299,30 +297,35 @@
         }
     });
 
+    // --- DASHBOARD ADMIN ---
     async function showAdminDashboard() {
         const content = document.getElementById('appContent');
         content.innerHTML = `<h1>PANNELLO RECLUTAMENTO LSPD</h1><div id="adminList">Caricamento database...</div>`;
 
-        const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
-        let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
+        try {
+            const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
+            let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 'var(--police-accent)');
-            html += `
-                <tr>
-                    <td>#${data.protocollo}</td>
-                    <td>${data.nomeIC}</td>
-                    <td style="color:${color}; font-weight:bold;">${data.stato}</td>
-                    <td class="action-cell">
-                        <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
-                        <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
-                        <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
-                    </td>
-                </tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('adminList').innerHTML = html;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 'var(--police-accent)');
+                html += `
+                    <tr>
+                        <td>#${data.protocollo}</td>
+                        <td>${data.nomeIC}</td>
+                        <td style="color:${color}; font-weight:bold;">${data.stato}</td>
+                        <td class="action-cell">
+                            <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
+                            <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
+                            <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
+                        </td>
+                    </tr>`;
+            });
+            html += `</tbody></table>`;
+            document.getElementById('adminList').innerHTML = html;
+        } catch (e) {
+            document.getElementById('adminList').innerHTML = "Errore nel caricamento del database.";
+        }
     }
 
     async function viewDetails(id) {
@@ -372,6 +375,7 @@
 
     function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
+    // --- DASHBOARD UTENTE ---
     async function checkUserApplication(uid) {
         const doc = await db.collection("candidature").doc(uid).get();
         const content = document.getElementById('appContent');
@@ -455,39 +459,60 @@
         e.preventDefault();
         const btn = document.getElementById('btnInvia');
         btn.disabled = true; btn.innerText = "TRASMISSIONE IN CORSO...";
+        
         const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(el => el.value).join(", ");
         const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+        
         const formData = {
-            protocollo: registroID, nomeReale: document.getElementById('nomeReale').value, etaReale: document.getElementById('etaReale').value,
-            discordID: document.getElementById('discordID').value, nomeIC: document.getElementById('nomeIC').value,
-            dataNascita: document.getElementById('dataNascita').value, telefono: document.getElementById('telefono').value,
-            portoArmi: document.getElementById('portoArmi').value, patenti: patenti || "Nessuna",
-            fedina: document.getElementById('fedina').value, esperienze: document.getElementById('esperienze').value,
-            motivazione: document.getElementById('motivazione').value, dataInvio: new Date().toLocaleString(),
-            email: auth.currentUser.email, stato: 'IN REVISIONE'
+            protocollo: registroID, 
+            nomeReale: document.getElementById('nomeReale').value, 
+            etaReale: document.getElementById('etaReale').value,
+            discordID: document.getElementById('discordID').value, 
+            nomeIC: document.getElementById('nomeIC').value,
+            dataNascita: document.getElementById('dataNascita').value, 
+            telefono: document.getElementById('telefono').value,
+            portoArmi: document.getElementById('portoArmi').value, 
+            patenti: patenti || "Nessuna",
+            fedina: document.getElementById('fedina').value, 
+            esperienze: document.getElementById('esperienze').value,
+            motivazione: document.getElementById('motivazione').value, 
+            dataInvio: new Date().toLocaleString(),
+            email: auth.currentUser.email, 
+            stato: 'IN REVISIONE'
         };
+
         try {
             await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
+            
+            // Webhook Discord
             await fetch(WEBHOOK_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: `🚨 **NUOVA CANDIDATURA** ${ROLE_TAGS}`,
                     embeds: [{
-                        title: `FASCICOLO #${formData.protocollo}`, color: 2123412,
+                        title: `FASCICOLO #${formData.protocollo}`, 
+                        color: 2123412,
                         fields: [
                             { name: "👤 INFO OOC", value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, inline: true },
                             { name: "📋 INFO IC", value: `**Nome:** ${formData.nomeIC}\n**Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, inline: true },
                             { name: "🛡️ STATO LEGALE", value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}`, inline: false },
                             { name: "💼 ESPERIENZE", value: formData.esperienze, inline: false },
                             { name: "🎯 MOTIVAZIONE", value: formData.motivazione, inline: false }
-                        ], footer: { text: `LSPD Portal | ${formData.dataInvio}` }
+                        ], 
+                        footer: { text: `LSPD Portal | ${formData.dataInvio}` }
                     }]
                 })
             });
             window.location.reload();
-        } catch (e) { showNotice("Errore invio", "error"); btn.disabled = false; }
+        } catch (e) { 
+            showNotice("Errore invio", "error"); 
+            btn.disabled = false; 
+            btn.innerText = "TRASMETTI AL DIPARTIMENTO";
+        }
     }
 
+    // --- SISTEMA AUTENTICAZIONE ---
     function toggleAuth() {
         document.getElementById('loginForm').classList.toggle('hidden');
         document.getElementById('registerForm').classList.toggle('hidden');
@@ -502,7 +527,9 @@
     document.getElementById('registerForm').addEventListener('submit', e => {
         e.preventDefault();
         const email = document.getElementById('regEmail').value;
-        auth.createUserWithEmailAndPassword(email, document.getElementById('regPassword').value)
+        const password = document.getElementById('regPassword').value;
+        
+        auth.createUserWithEmailAndPassword(email, password)
             .then(() => { 
                 localStorage.setItem('lspd_registered_email', email); 
                 showNotice("Account creato", "success"); 
@@ -514,4 +541,3 @@
 </script>
 </body>
 </html>
-
