@@ -227,27 +227,32 @@
     const db = firebase.firestore();
 
     // --- FUNZIONI DI SICUREZZA ---
-    function checkSecurity(email) {
-        if (email === ADMIN_EMAIL) {
-            console.log("Accesso Admin: Sicurezza bypassata.");
-            return false; 
-        }
+function checkSecurity(email) {
+    if (email === ADMIN_EMAIL) return false; 
 
-        const locked = localStorage.getItem('lspd_registered_email');
-        if (locked && locked !== email) {
-            document.getElementById('modalResult').innerHTML = `
-                <div style="padding:20px;">
-                    <h2 style="color:var(--danger); font-family:'Orbitron';">DISPOSITIVO BLOCCATO</h2>
-                    <p>Questo terminale è già associato ad un altro profilo civico: <br><strong style="color:var(--police-accent)">${locked}</strong></p>
-                    <p style="font-size:0.8rem; color:#888;">Per motivi di sicurezza è consentito un solo account per dispositivo.</p>
-                    <button onclick="logout()" style="margin-top:20px;">ESCI</button>
-                </div>
-            `;
-            document.getElementById('modalOverlay').style.display = 'flex';
-            return true;
-        }
+    const locked = localStorage.getItem('lspd_registered_email');
+    
+    // Se non c'è nulla nel localStorage (es. utente ha pulito cache) 
+    // ma l'utente è loggato, resettiamo il blocco sulla mail attuale
+    if (!locked && email) {
+        localStorage.setItem('lspd_registered_email', email);
         return false;
     }
+
+    if (locked && locked !== email) {
+        document.getElementById('mainApp').innerHTML = ""; // Svuota tutto per sicurezza
+        document.getElementById('modalResult').innerHTML = `
+            <div style="padding:20px;">
+                <h2 style="color:var(--danger); font-family:'Orbitron';">SISTEMA BLOCCATO</h2>
+                <p>Accesso negato. Questo terminale è registrato sotto un'altra identità civica.</p>
+                <button onclick="logout()" style="margin-top:20px;">TORNA AL LOGIN</button>
+            </div>
+        `;
+        document.getElementById('modalOverlay').style.display = 'flex';
+        return true;
+    }
+    return false;
+}
 
     // --- RESET SEGRETO (3 VOLTE ESC) ---
     let escCount = 0;
@@ -524,20 +529,36 @@
             .catch(() => showNotice("Credenziali errate", "error"));
     });
 
-    document.getElementById('registerForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        
-        auth.createUserWithEmailAndPassword(email, password)
-            .then(() => { 
-                localStorage.setItem('lspd_registered_email', email); 
-                showNotice("Account creato", "success"); 
-            })
-            .catch(err => showNotice(err.message, "error"));
-    });
+document.getElementById('registerForm').addEventListener('submit', e => {
+    e.preventDefault();
+    
+    // CONTROLLO PREVENTIVO: Il dispositivo ha già un account?
+    const locked = localStorage.getItem('lspd_registered_email');
+    if (locked) {
+        showNotice("ERRORE: Dispositivo già associato a un account.", "error");
+        return; // Interrompe la creazione dell'account
+    }
+
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(() => { 
+            // Salva immediatamente l'email per bloccare futuri tentativi
+            localStorage.setItem('lspd_registered_email', email); 
+            showNotice("Account creato con successo", "success"); 
+        })
+        .catch(err => {
+            if(err.code === "auth/email-already-in-use") {
+                showNotice("Email già registrata nel database.", "error");
+            } else {
+                showNotice("Errore: " + err.message, "error");
+            }
+        });
+});
 
     function logout() { auth.signOut().then(() => window.location.reload()); }
 </script>
 </body>
 </html>
+
