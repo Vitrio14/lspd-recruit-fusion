@@ -462,13 +462,24 @@
             // Mostra Modal di Successo Finale
             document.getElementById('modalResult').innerHTML = `
                 <h2 style="color: var(--police-accent); font-family: 'Orbitron';">INVIO COMPLETATO</h2>
-                <div style="margin: 20px 0; border: 1px solid var(--police-blue); padding: 15px; background: rgba(0,85,255,0.1); text-align: left;">
-                    <p style="font-size: 1.1rem; text-align:center;">PROTOCOLLO: <strong>#${registroID}</strong></p>
-                    <hr style="border: 0; border-top: 1px solid var(--police-blue); margin: 15px 0;">
-                    <p style="font-size: 0.9rem;">1. Conserva questo codice: <strong>#${registroID}</strong></p>, ti servirà per i prossimi step.</p>
-                    <p style="font-size: 0.9rem;">2. Se idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.</p>
-                    <p style="font-size: 0.9rem;">3. Dovrai recarti in centrale con il codice protocollo da fornire a un reclutatore.</p>
-                </div>
+<div style="margin: 20px 0; border: 1px solid var(--police-blue); padding: 15px; background: rgba(0,85,255,0.1); text-align: left;">
+    <p style="font-size: 1.1rem; text-align:center; margin-bottom: 10px;">
+        PROTOCOLLO: <strong>#${registroID}</strong>
+    </p>
+    <hr style="border: 0; border-top: 1px solid var(--police-blue); margin: 15px 0;">
+    
+    <p style="font-size: 0.9rem; margin-bottom: 8px;">
+        1. <strong>Conserva questo codice: #${registroID}</strong>, ti servirà per i prossimi step.
+    </p>
+    
+    <p style="font-size: 0.9rem; margin-bottom: 8px;">
+        2. Se idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.
+    </p>
+    
+    <p style="font-size: 0.9rem; margin-bottom: 0;">
+        3. Dovrai recarti in centrale con il codice protocollo da fornire a un reclutatore.
+    </p>
+</div>
                 <button onclick="window.location.reload()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">HO CAPITO</button>
             `;
             document.getElementById('modalOverlay').style.display = 'flex';
@@ -491,6 +502,7 @@
 </script>
 </body>
 </html>
+
 
 
 
