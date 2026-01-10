@@ -333,7 +333,6 @@
         }
     }
 
-    // Mostra il modal quando l'utente prova ad entrare ma ha già inviato
     function showExistingApp(protocollo) {
         const modal = document.getElementById('modalOverlay');
         document.getElementById('modalResult').innerHTML = `
@@ -378,9 +377,12 @@
             .catch(err => showNotice("ERRORE: " + err.message, "error"));
     });
 
+    // Funzione Logout con refresh per resettare i bottoni
     function logout() {
         auth.signOut().then(() => {
-            showNotice("LOGOUT EFFETTUATO", "info");
+            window.location.reload();
+        }).catch(() => {
+            window.location.reload();
         });
     }
 
@@ -409,14 +411,12 @@
         };
 
         try {
-            // 1. Salva su Firestore per bloccare l'utente in futuro
             await db.collection("candidature").doc(user.uid).set({
                 protocollo: registroID,
                 email: user.email,
                 dataInvio: new Date().toLocaleString()
             });
 
-            // 2. Invia a Discord
             const payload = {
                 content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
                 embeds: [{
@@ -430,7 +430,7 @@
                         { name: "📜 ESPERIENZE PREGRESSE", value: formData.esperienze || "Nessuna" },
                         { name: "🎯 MOTIVAZIONE", value: formData.motivazione }
                     ],
-                    footer: { text: "LSPD Central Registry - Fusion Eternal" },
+                    footer: { text: "LSPD - Gestione candidature - Fusion Eternal" },
                     timestamp: new Date()
                 }]
             };
@@ -441,7 +441,6 @@
                 body: JSON.stringify(payload)
             });
 
-            // 3. MOSTRA IL SUCCESSO (Quello che c'era prima)
             showNotice("DATABASE AGGIORNATO", "success");
             const modal = document.getElementById('modalOverlay');
             document.getElementById('modalResult').innerHTML = `
@@ -451,13 +450,7 @@
                 <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 10px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
                     <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
                     <p style="font-size: 0.85rem; color: #fff; margin-top: 10px;">
-                        ⚠️ <strong>CONSERVA QUESTO CODICE:</strong> Ti servirà obbligatoriamente per gli step successivi della selezione.
-                    </p>
-                    <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
-                        Se idoneo verrai contattato in città tramite il numero fornito o tramite il giornalino statale.
-                    </p>
-                                        <p style="font-size: 0.85rem; color: #ccc; margin-top: 10px;">
-                        Dovrai recarti in centrale con il codice domanda.
+                        ⚠️ <strong>CONSERVA QUESTO CODICE:</strong> Ti servirà per la selezione.
                     </p>
                 </div>
                 
@@ -477,4 +470,3 @@
 </script>
 </body>
 </html>
-
