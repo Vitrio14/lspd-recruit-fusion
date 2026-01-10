@@ -72,7 +72,7 @@
             max-width: 700px;
             background: rgba(13, 17, 23, 0.95);
             border: 1px solid var(--border-blue);
-            padding: 40px 30px 30px; /* Aumentato padding superiore */
+            padding: 40px 30px 30px;
             margin: 20px 0 100px 0;
             backdrop-filter: blur(10px);
             box-shadow: 0 0 20px var(--neon-glow), inset 0 0 10px var(--neon-glow);
@@ -85,7 +85,7 @@
         .classified-tag {
             position: absolute;
             top: 15px;
-            right: 15px; /* Fissato a destra */
+            right: 15px;
             border: 1px solid var(--danger);
             color: var(--danger);
             padding: 2px 10px;
@@ -132,7 +132,7 @@
         #logoutBtn { 
             position: absolute; 
             top: 15px; 
-            left: 15px; /* Fissato a sinistra */
+            left: 15px; 
             width: auto; 
             padding: 5px 12px; 
             background: transparent; 
@@ -224,6 +224,49 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
+    // --- FUNZIONI DI SICUREZZA ---
+    function checkSecurity(email) {
+        // BYPASS ADMIN: Se l'admin accede, ignora il blocco hardware
+        if (email === ADMIN_EMAIL) {
+            console.log("Accesso Admin: Sicurezza bypassata.");
+            return false; 
+        }
+
+        const locked = localStorage.getItem('lspd_registered_email');
+        
+        // VINCOLO CIVILE: Se il PC è bloccato su un'altra email
+        if (locked && locked !== email) {
+            document.getElementById('modalResult').innerHTML = `
+                <div style="padding:20px;">
+                    <h2 style="color:var(--danger); font-family:'Orbitron';">DISPOSITIVO BLOCCATO</h2>
+                    <p>Questo terminale è già associato ad un altro profilo civico: <br><strong style="color:var(--police-accent)">${locked}</strong></p>
+                    <p style="font-size:0.8rem; color:#888;">Per motivi di sicurezza è consentito un solo account per dispositivo.</p>
+                    <button onclick="logout()" style="margin-top:20px;">ESCI</button>
+                </div>
+            `;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            return true;
+        }
+        return false;
+    }
+
+    // --- FUNZIONE SEGRETA RESET (3 VOLTE ESC) ---
+    let escCount = 0;
+    window.addEventListener('keydown', (e) => {
+        if (e.key === "Escape") {
+            escCount++;
+            if (escCount === 3) {
+                const pass = prompt("INSERIRE CODICE RESET TERMINALE:");
+                if (pass === "admin-reset") {
+                    localStorage.removeItem('lspd_registered_email');
+                    alert("Terminale sbloccato con successo.");
+                    window.location.reload();
+                }
+                escCount = 0;
+            }
+        } else { escCount = 0; }
+    });
 
     function showNotice(message, type = 'info') {
         const container = document.getElementById('notification-container');
@@ -445,17 +488,6 @@
         } catch (e) { showNotice("Errore invio", "error"); btn.disabled = false; }
     }
 
-    function checkSecurity(email) {
-        if (email === ADMIN_EMAIL) return false;
-        const locked = localStorage.getItem('lspd_registered_email');
-        if (locked && locked !== email) {
-            document.getElementById('modalResult').innerHTML = `<h2 style="color:var(--danger); font-family:'Orbitron';">DISPOSITIVO BLOCCATO</h2><p>Terminal già associato a: <strong>${locked}</strong></p><button onclick="logout()">LOGOUT</button>`;
-            document.getElementById('modalOverlay').style.display = 'flex';
-            return true;
-        }
-        return false;
-    }
-
     function toggleAuth() {
         document.getElementById('loginForm').classList.toggle('hidden');
         document.getElementById('registerForm').classList.toggle('hidden');
@@ -471,7 +503,10 @@
         e.preventDefault();
         const email = document.getElementById('regEmail').value;
         auth.createUserWithEmailAndPassword(email, document.getElementById('regPassword').value)
-            .then(() => { localStorage.setItem('lspd_registered_email', email); showNotice("Account creato", "success"); })
+            .then(() => { 
+                localStorage.setItem('lspd_registered_email', email); 
+                showNotice("Account creato", "success"); 
+            })
             .catch(err => showNotice(err.message, "error"));
     });
 
