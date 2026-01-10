@@ -10,10 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Barlow+Condensed:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --police-blue: #003366;
+            --police-blue: #0055ff; /* Blu più vivido per effetto neon */
+            --police-dark: #002266;
             --police-accent: #ffd700;
             --terminal-bg: #05070a;
-            --border-blue: #1e3a5f;
+            --border-blue: #0055ff;
+            --neon-glow: rgba(0, 85, 255, 0.4);
             --gold: #ffd700;
             --danger: #ff4444;
         }
@@ -31,17 +33,22 @@
             min-height: 100vh;
         }
 
-        .police-logo { width: 120px; margin-top: 30px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); z-index: 5; }
+        .police-logo { 
+            width: 120px; 
+            margin-top: 30px; 
+            filter: drop-shadow(0 0 15px var(--neon-glow)); 
+            z-index: 5; 
+        }
 
         .container {
             width: 90%;
             max-width: 700px;
             background: rgba(13, 17, 23, 0.95);
-            border: 2px solid var(--border-blue);
+            border: 1px solid var(--border-blue);
             padding: 30px;
-            margin: 20px 0;
+            margin: 20px 0 100px 0; /* Margine inferiore per non coprire col footer */
             backdrop-filter: blur(10px);
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px var(--neon-glow), inset 0 0 10px var(--neon-glow);
             position: relative;
         }
 
@@ -56,6 +63,7 @@
             font-size: 0.6rem;
             font-weight: bold;
             text-transform: uppercase;
+            box-shadow: 0 0 5px rgba(255, 68, 68, 0.3);
         }
 
         h1 { 
@@ -66,6 +74,7 @@
             border-bottom: 2px solid var(--police-accent); 
             padding-bottom: 15px;
             letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-glow);
         }
 
         .section-header { 
@@ -73,7 +82,7 @@
             color: var(--police-accent); 
             font-size: 0.85rem; 
             margin: 25px 0 10px; 
-            border-bottom: 1px solid rgba(255,215,0,0.2); 
+            border-bottom: 1px solid rgba(0, 85, 255, 0.3); 
             letter-spacing: 1px;
         }
 
@@ -83,28 +92,64 @@
         label { display: block; color: var(--police-accent); font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;}
         
         input, textarea, select {
-            width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-blue); color: white;
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0, 85, 255, 0.3); color: white;
             font-family: 'Barlow Condensed'; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
         }
 
-        input:focus, textarea:focus { border-color: var(--police-accent); outline: none; background: rgba(30, 40, 50, 0.6); }
+        input:focus, textarea:focus { 
+            border-color: var(--police-accent); 
+            outline: none; 
+            background: rgba(0, 85, 255, 0.1); 
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
 
         .checkbox-group { 
-            display: flex; gap: 15px; background: rgba(255,255,255,0.05); padding: 10px; 
-            border: 1px solid var(--border-blue); flex-wrap: wrap;
+            display: flex; gap: 15px; background: rgba(0, 85, 255, 0.05); padding: 10px; 
+            border: 1px solid rgba(0, 85, 255, 0.2); flex-wrap: wrap;
         }
 
         .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 1rem; color: #fff; }
-        .checkbox-group input { width: auto; }
+        .checkbox-group input { width: auto; accent-color: var(--police-blue); }
 
         button {
-            width: 100%; padding: 18px; background: var(--police-blue); color: white; border: 1px solid var(--police-accent);
+            width: 100%; padding: 18px; background: var(--police-dark); color: white; border: 1px solid var(--police-blue);
             font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 20px;
             text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 0 10px var(--neon-glow);
         }
 
-        button:hover:not(:disabled) { background: #004488; box-shadow: 0 0 20px rgba(0,51,102,0.8); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:hover:not(:disabled) { 
+            background: var(--police-blue); 
+            box-shadow: 0 0 20px var(--police-blue); 
+            color: #fff;
+        }
+
+        /* FOOTER STILE NEON */
+        .main-footer {
+            width: 100%;
+            padding: 20px 0;
+            background: rgba(5, 7, 10, 0.9);
+            border-top: 1px solid var(--police-blue);
+            text-align: center;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 -5px 15px var(--neon-glow);
+            z-index: 100;
+        }
+
+        .footer-text {
+            font-family: 'Orbitron';
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 0 5px var(--neon-glow);
+        }
+
+        .footer-text span {
+            color: var(--police-accent);
+        }
 
         /* MODALE */
         #modalOverlay {
@@ -113,24 +158,31 @@
         }
 
         .modal-content {
-            background: #0d1117; border: 2px solid var(--police-accent); width: 90%; max-width: 550px;
-            padding: 40px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,1);
+            background: #0d1117; border: 1px solid var(--police-blue); width: 90%; max-width: 550px;
+            padding: 40px; position: relative; box-shadow: 0 0 40px var(--neon-glow);
         }
 
         .protocol-steps { text-align: left; margin: 25px 0; }
         .protocol-step-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; font-size: 1rem; line-height: 1.4; }
         .protocol-step-number {
-            background: var(--police-accent); color: black; font-family: 'Orbitron';
+            background: var(--police-blue); color: white; font-family: 'Orbitron';
             padding: 4px 8px; font-weight: bold; font-size: 0.8rem; border-radius: 2px; flex-shrink: 0;
+            box-shadow: 0 0 8px var(--neon-glow);
         }
 
-        .protocol-footer-note { font-family: 'Orbitron'; color: var(--police-accent); text-align: center; font-size: 0.75rem; border-top: 1px solid var(--border-blue); padding-top: 15px; margin-top: 20px;}
+        .protocol-footer-note { font-family: 'Orbitron'; color: var(--police-accent); text-align: center; font-size: 0.75rem; border-top: 1px solid rgba(0, 85, 255, 0.3); padding-top: 15px; margin-top: 20px;}
 
         .btn-close {
-            background: transparent; border: 1px solid var(--police-accent); color: var(--police-accent); padding: 10px 25px;
+            background: transparent; border: 1px solid var(--police-blue); color: var(--police-blue); padding: 10px 25px;
             cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem; display: block; margin: 20px auto 0; transition: 0.3s;
         }
-        .btn-close:hover { background: var(--police-accent); color: #000; }
+        .btn-close:hover { background: var(--police-blue); color: #fff; box-shadow: 0 0 15px var(--neon-glow); }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .container { padding: 20px; margin-bottom: 120px; }
+            .footer-text { font-size: 0.55rem; padding: 0 10px; }
+        }
     </style>
 </head>
 <body>
@@ -191,15 +243,18 @@
     </form>
 </div>
 
+<footer class="main-footer">
+    <div class="footer-text">
+        © 2026 <span>LOS SANTOS POLICE DEPARTMENT</span> — PROTOCOLLO FUSION ETERNAL
+    </div>
+</footer>
+
 <div id="modalOverlay">
-    <div class="modal-content" id="modalResult">
-        </div>
+    <div class="modal-content" id="modalResult"></div>
 </div>
 
 <script>
-    // 1. INSERISCI QUI IL TUO URL WEBHOOK
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8"; 
-    // 2. INSERISCI QUI L'ID DEL RUOLO DA TAGGARE (es. Reclutatori)
     const ROLE_ID = "1433123957934002228"; 
 
     document.getElementById('candidaturaForm').addEventListener('submit', function(e) {
@@ -214,7 +269,6 @@
         const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(cb => cb.value).join(", ") || "Nessuna";
 
         const payload = {
-            // IL TAG VIENE MESSO QUI PER ATTIVARE LA NOTIFICA
             content: `📢 **Nuova Candidatura in arrivo!** <@&${ROLE_ID}>`, 
             embeds: [{
                 title: "🚨 NUOVO ARRUOLAMENTO RICEVUTO",
@@ -277,5 +331,4 @@
 </script>
 
 </body>
-
 </html>
