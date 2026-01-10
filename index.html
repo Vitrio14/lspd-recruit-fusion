@@ -268,22 +268,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-    // --- CONFIGURAZIONE SERVIZIO ---
-    const ADMIN_EMAIL = "lspd@admin.it"; // CAMBIA QUESTA CON LA TUA EMAIL
+    // --- CONFIGURAZIONE ---
+    const ADMIN_EMAIL = "lspd@admin.it"; // La tua email admin
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
+    const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
 
-    function showNotice(message, type = 'info') {
-        const container = document.getElementById('notification-container');
-        const notice = document.createElement('div');
-        notice.className = `notice ${type}`;
-        notice.innerHTML = `<span>${message}</span>`;
-        container.appendChild(notice);
-        setTimeout(() => {
-            notice.style.animation = "fadeOut 0.5s ease forwards";
-            setTimeout(() => notice.remove(), 500);
-        }, 4000);
-    }
-
-    // --- CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
         authDomain: "lspd-portal-d34b0.firebaseapp.com",
@@ -298,10 +287,19 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
-    const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
+    function showNotice(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        const notice = document.createElement('div');
+        notice.className = `notice ${type}`;
+        notice.innerHTML = `<span>${message}</span>`;
+        container.appendChild(notice);
+        setTimeout(() => {
+            notice.style.animation = "fadeOut 0.5s ease forwards";
+            setTimeout(() => notice.remove(), 500);
+        }, 4000);
+    }
 
-    // --- LOGICA DI SICUREZZA ---
+    // --- SICUREZZA E HARDWARE BLOCK ---
     function checkSecurity(currentUserEmail = null) {
         if (currentUserEmail === ADMIN_EMAIL) return false; 
         const lockedEmail = localStorage.getItem('lspd_registered_email');
@@ -322,6 +320,18 @@
         modal.style.display = 'flex';
     }
 
+    // --- SISTEMA DI SBLOCCO (Easter Egg) ---
+    let sKey = "";
+    window.addEventListener('keydown', (e) => {
+        sKey += e.key.toLowerCase();
+        if (sKey.includes("sbloccatutto")) {
+            localStorage.clear();
+            alert("SISTEMA RESETTATO: Memoria locale pulita.");
+            window.location.reload();
+            sKey = "";
+        }
+    });
+
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -338,7 +348,7 @@
         }
     });
 
-    // --- DASHBOARD ADMIN ---
+    // --- ADMIN PANEL ---
     async function showAdminDashboard() {
         const container = document.getElementById('mainApp');
         document.getElementById('authSection').classList.add('hidden');
@@ -347,24 +357,24 @@
         container.innerHTML = `
             <button id="logoutBtn" onclick="logout()">LOGOUT ADMIN</button>
             <h1>PANNELLO RECLUTAMENTO LSPD</h1>
-            <div id="adminList" style="margin-top:20px;">Caricamento candidature...</div>
+            <div id="adminList" style="margin-top:20px;">Caricamento...</div>
         `;
 
         const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
-        let html = '<table style="width:100%; border-collapse: collapse; font-size:0.8rem; margin-bottom:50px;">';
+        let html = '<table style="width:100%; border-collapse: collapse; font-size:0.8rem;">';
         html += '<tr style="color:var(--police-accent); border-bottom:1px solid blue;"><th>Prot.</th><th>Nome IC</th><th>Stato</th><th>Azioni</th></tr>';
         
         snapshot.forEach(doc => {
             const data = doc.data();
-            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+            const color = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
             html += `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <td style="padding:10px;">${data.protocollo}</td>
                     <td>${data.nomeIC}</td>
-                    <td style="color:${statusColor}; font-weight:bold;">${data.stato || 'IN REVISIONE'}</td>
+                    <td style="color:${color}; font-weight:bold;">${data.stato}</td>
                     <td>
-                        <button onclick="updateStatus('${doc.id}', 'ACCETTATA')" style="padding:5px; background:green; width:auto; font-size:0.6rem;">OK</button>
-                        <button onclick="updateStatus('${doc.id}', 'RIFIUTATA')" style="padding:5px; background:red; width:auto; font-size:0.6rem;">NO</button>
+                        <button onclick="updateStatus('${doc.id}', 'ACCETTATA')" style="width:35px; background:green; padding:5px; font-size:0.6rem;">OK</button>
+                        <button onclick="updateStatus('${doc.id}', 'RIFIUTATA')" style="width:35px; background:red; padding:5px; font-size:0.6rem;">NO</button>
                     </td>
                 </tr>
             `;
@@ -374,53 +384,40 @@
     }
 
     async function updateStatus(uid, nuovoStato) {
-        if(confirm(`Impostare come ${nuovoStato}?`)) {
+        if(confirm(`Impostare stato ${nuovoStato}?`)) {
             await db.collection("candidature").doc(uid).update({ stato: nuovoStato });
-            showNotice("Stato aggiornato", "success");
+            showNotice("Aggiornato!", "success");
             showAdminDashboard();
         }
     }
 
     // --- DASHBOARD CITTADINO ---
     async function checkUserApplication(uid) {
-        try {
-            const doc = await db.collection("candidature").doc(uid).get();
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            if (doc.exists) showStatusPage(doc.data());
-        } catch (error) { console.error(error); }
+        const doc = await db.collection("candidature").doc(uid).get();
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        if (doc.exists) showStatusPage(doc.data());
     }
 
     function showStatusPage(data) {
-        const stato = data.stato || 'IN REVISIONE';
-        let statusColor = '#ffd700';
-        let message = "Il tuo fascicolo è attualmente sotto esame dal Comando LSPD.";
-        
-        if(stato === 'ACCETTATA') {
-            statusColor = '#00ff88';
-            message = "CONGRATULAZIONI! Recati in centrale con il codice protocollo per l'arruolamento.";
-        } else if (stato === 'RIFIUTATA') {
-            statusColor = '#ff4444';
-            message = "Siamo spiacenti, la tua candidatura non è stata accolta.";
-        }
-
-        const container = document.getElementById('mainApp');
-        container.innerHTML = `
+        const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+        document.getElementById('mainApp').innerHTML = `
             <button id="logoutBtn" onclick="logout()">LOGOUT</button>
-            <div class="classified-tag">${stato}</div>
-            <h1>STATO CANDIDATURA: #${data.protocollo}</h1>
+            <div class="classified-tag">${data.stato}</div>
+            <h1>STATO PRATICA: #${data.protocollo}</h1>
             <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 25px; margin-top: 30px; text-align: center;">
-                <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.5rem;">${stato}</p>
-                <p style="margin: 15px 0;">${message}</p>
-                <div style="margin: 20px 0; padding: 15px; border: 1px solid rgba(0,85,255,0.3); text-align: left; font-size: 0.9rem;">
-                    <p>• Protocollo: <strong>#${data.protocollo}</strong></p>
-                    <p>• Nome: <strong>${data.nomeIC}</strong></p>
+                <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.5rem;">${data.stato}</p>
+                <div style="margin: 20px 0; text-align: left; font-size: 0.9rem;">
+                    <p>Cittadino: <strong>${data.nomeIC}</strong></p>
+                    <p>Protocollo: <strong>#${data.protocollo}</strong></p>
+                    <hr style="border-color: rgba(0,85,255,0.2);">
+                    <p>${data.stato === 'ACCETTATA' ? 'Recati in centrale per l\'arruolamento.' : 'Il Comando sta valutando il tuo fascicolo.'}</p>
                 </div>
             </div>
         `;
     }
 
-    // --- LOGICA FORM E INVIO ---
+    // --- LOGIN / REGISTER ---
     document.getElementById('loginForm').addEventListener('submit', e => {
         e.preventDefault();
         auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
@@ -438,6 +435,7 @@
             .catch(err => showNotice(err.message, "error"));
     });
 
+    // --- INVIO CANDIDATURA ---
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnInvia');
@@ -467,54 +465,28 @@
 
         try {
             await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
-            
-// Webhook con INFO COMPLETE
+
             await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    content: `🚨 **NUOVA CANDIDATURA RICEVUTA** ${ROLE_TAGS}`,
+                    content: `🚨 **NUOVA CANDIDATURA** ${ROLE_TAGS}`,
                     embeds: [{
-                        title: `FASCICOLO ARRUOLAMENTO #${formData.protocollo}`,
-                        color: 2123412, // Blu Polizia
+                        title: `FASCICOLO #${formData.protocollo}`,
+                        color: 2123412,
                         fields: [
-                            { 
-                                name: "👤 INFO OOC", 
-                                value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, 
-                                inline: true 
-                            },
-                            { 
-                                name: "📋 INFO IC", 
-                                value: `**Nome:** ${formData.nomeIC}\n**Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, 
-                                inline: true 
-                            },
-                            { 
-                                name: "🛡️ STATO LEGALE", 
-                                value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}`, 
-                                inline: false 
-                            },
-                            { 
-                                name: "💼 ESPERIENZE PREGRESSE", 
-                                value: formData.esperienze || "Nessuna dichiarata", 
-                                inline: false 
-                            },
-                            { 
-                                name: "🎯 MOTIVAZIONE", 
-                                value: formData.motivazione || "Nessuna dichiarata", 
-                                inline: false 
-                            }
+                            { name: "👤 INFO OOC", value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, inline: true },
+                            { name: "📋 INFO IC", value: `**Nome:** ${formData.nomeIC}\n**Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, inline: true },
+                            { name: "🛡️ STATO LEGALE", value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}`, inline: false },
+                            { name: "💼 ESPERIENZE", value: formData.esperienze, inline: false },
+                            { name: "🎯 MOTIVAZIONE", value: formData.motivazione, inline: false }
                         ],
-                        footer: { text: `LSPD - Gestione reclutatori | Data: ${formData.dataInvio}` },
-                        thumbnail: { url: "https://i.imgur.com/8kX6pM9.png" } // Opzionale: link a un piccolo logo LSPD
+                        footer: { text: `LSPD - Gestione reclutatori | ${formData.dataInvio}` }
                     }]
                 })
             });
-
             window.location.reload();
-        } catch (error) {
-            showNotice("Errore invio", "error");
-            btn.disabled = false;
-        }
+        } catch (e) { showNotice("Errore!", "error"); btn.disabled = false; }
     });
 
     function toggleAuth() {
@@ -530,12 +502,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
