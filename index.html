@@ -377,11 +377,8 @@
             .catch(err => showNotice("ERRORE: " + err.message, "error"));
     });
 
-    // Funzione Logout con refresh per resettare i bottoni
     function logout() {
         auth.signOut().then(() => {
-            window.location.reload();
-        }).catch(() => {
             window.location.reload();
         });
     }
@@ -430,7 +427,7 @@
                         { name: "📜 ESPERIENZE PREGRESSE", value: formData.esperienze || "Nessuna" },
                         { name: "🎯 MOTIVAZIONE", value: formData.motivazione }
                     ],
-                    footer: { text: "LSPD - Gestione candidature - Fusion Eternal" },
+                    footer: { text: "LSPD - Gestione reclutamenti - Fusion Eternal" },
                     timestamp: new Date()
                 }]
             };
@@ -443,15 +440,23 @@
 
             showNotice("DATABASE AGGIORNATO", "success");
             const modal = document.getElementById('modalOverlay');
+            
+            // AGGIORNAMENTO TESTO MODAL RICHIESTO
             document.getElementById('modalResult').innerHTML = `
                 <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
                 <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
                 
-                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 10px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
+                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
                     <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
-                    <p style="font-size: 0.85rem; color: #fff; margin-top: 10px;">
-                        ⚠️ <strong>CONSERVA QUESTO CODICE:</strong> Ti servirà per la selezione.
+                    
+                    <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                        ⚠️ <strong>AZIONI RICHIESTE:</strong>
                     </p>
+                    <ul style="font-size: 0.85rem; color: #ccc; padding-left: 20px; line-height: 1.4;">
+                        <li>Conserva il Codice Protocollo: è indispensabile per la selezione.</li>
+                        <li>Se idoneo, verrai contattato tramite <strong>recapito telefonico</strong> o <strong>giornalino statale</strong>.</li>
+                        <li>Dovrai recarti in centrale con il codice protocollo e chiedere di poter parlare con un <strong>reclutatore</strong>.</li>
+                    </ul>
                 </div>
                 
                 <button onclick="logout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
