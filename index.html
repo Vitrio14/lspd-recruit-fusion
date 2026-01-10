@@ -64,14 +64,8 @@
         .notice.error { border-left-color: var(--danger); text-shadow: 0 0 5px var(--danger); }
         .notice.info { border-left-color: var(--police-accent); text-shadow: 0 0 5px var(--police-accent); }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            to { transform: translateX(20px); opacity: 0; }
-        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { transform: translateX(20px); opacity: 0; } }
 
         .container, .auth-container {
             width: 90%;
@@ -101,64 +95,43 @@
             text-transform: uppercase;
         }
 
-        h1 { 
-            font-family: 'Orbitron'; 
-            text-align: center; 
-            color: #fff; 
-            font-size: 1.2rem; 
-            border-bottom: 2px solid var(--police-accent); 
-            padding-bottom: 15px;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px var(--neon-glow);
-        }
-
-        .section-header { 
-            font-family: 'Orbitron'; 
-            color: var(--police-accent); 
-            font-size: 0.85rem; 
-            margin: 25px 0 10px; 
-            border-bottom: 1px solid rgba(0, 85, 255, 0.3); 
-        }
+        h1 { font-family: 'Orbitron'; text-align: center; color: #fff; font-size: 1.2rem; border-bottom: 2px solid var(--police-accent); padding-bottom: 15px; letter-spacing: 2px; text-shadow: 0 0 10px var(--neon-glow); }
+        .section-header { font-family: 'Orbitron'; color: var(--police-accent); font-size: 0.85rem; margin: 25px 0 10px; border-bottom: 1px solid rgba(0, 85, 255, 0.3); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .form-group { margin-bottom: 15px; text-align: left; }
-        
         label { display: block; color: var(--police-accent); font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;}
-        
-        input, textarea, select {
-            width: 100%; padding: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 85, 255, 0.3); color: white;
-            font-family: 'Barlow Condensed'; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
-        }
-
+        input, textarea, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 85, 255, 0.3); color: white; font-family: 'Barlow Condensed'; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
         input:focus, textarea:focus, select:focus { border-color: var(--police-accent); outline: none; box-shadow: 0 0 10px var(--neon-glow); }
 
-        button {
-            width: 100%; padding: 18px; background: var(--police-dark); color: white; border: 1px solid var(--police-blue);
-            font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-
+        button { width: 100%; padding: 18px; background: var(--police-dark); color: white; border: 1px solid var(--police-blue); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
         button:hover:not(:disabled) { background: var(--police-blue); box-shadow: 0 0 20px var(--police-blue); }
+
+        /* Admin Table Styles */
+        .admin-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 20px; }
+        .admin-table th { background: rgba(0, 85, 255, 0.1); color: var(--police-accent); font-family: 'Orbitron'; font-size: 0.7rem; padding: 12px; text-align: left; border-bottom: 2px solid var(--police-blue); }
+        .admin-table td { padding: 12px; border-bottom: 1px solid rgba(0, 85, 255, 0.1); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .action-cell { display: flex; gap: 5px; }
+        .btn-small { padding: 5px 8px; font-size: 0.6rem; width: auto; margin: 0; }
+        .btn-info { background: var(--police-blue); }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: var(--danger); }
+
+        /* Detail Modal Styles */
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-top: 20px; }
+        .detail-item { background: rgba(255,255,255,0.05); padding: 10px; border-left: 2px solid var(--police-blue); }
+        .detail-item.full { grid-column: span 2; }
+        .detail-label { font-family: 'Orbitron'; font-size: 0.6rem; color: var(--police-accent); display: block; margin-bottom: 5px; }
+
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #0d1117; border: 1px solid var(--police-blue); width: 90%; max-width: 600px; padding: 30px; box-shadow: 0 0 40px var(--neon-glow); text-align: center; position: relative; max-height: 85vh; overflow-y: auto; }
 
         .auth-toggle { margin-top: 20px; font-size: 0.8rem; color: #aaa; cursor: pointer; }
         .auth-toggle span { color: var(--police-accent); text-decoration: underline; }
-
-        #logoutBtn {
-            position: absolute; top: 10px; left: 10px; width: auto; padding: 5px 10px;
-            background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 0.7rem; margin: 0;
-        }
-
+        #logoutBtn { position: absolute; top: 10px; left: 10px; width: auto; padding: 5px 10px; background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 0.7rem; margin: 0; }
         .checkbox-group { display: flex; gap: 15px; background: rgba(0, 85, 255, 0.05); padding: 12px; border: 1px solid rgba(0, 85, 255, 0.2); flex-wrap: wrap; }
         .checkbox-group label { display: flex; align-items: center; gap: 8px; color: #fff; text-transform: none; font-size: 1rem; }
-        .checkbox-group input { width: 16px; height: 16px; margin: 0; }
-
-        #modalOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
-        }
-
-        .modal-content { background: #0d1117; border: 1px solid var(--police-blue); width: 90%; max-width: 500px; padding: 40px; box-shadow: 0 0 40px var(--neon-glow); text-align: center; }
-
         .main-footer { width: 100%; padding: 20px 0; background: rgba(5, 7, 10, 0.95); border-top: 1px solid var(--police-blue); text-align: center; position: fixed; bottom: 0; left: 0; z-index: 100; }
     </style>
 </head>
@@ -181,7 +154,7 @@
             <label>Password</label>
             <input type="password" id="loginPassword" required placeholder="••••••••">
         </div>
-        <button type="submit" id="btnLogin">AUTENTICAZIONE</button>
+        <button type="submit">AUTENTICAZIONE</button>
         <div class="auth-toggle" onclick="toggleAuth()">Nuovo cittadino? <span>Registrati qui</span></div>
     </form>
 
@@ -194,7 +167,7 @@
             <label>Scegli Password (min. 6 car.)</label>
             <input type="password" id="regPassword" required minlength="6">
         </div>
-        <button type="submit" id="btnRegister">CREA ACCOUNT</button>
+        <button type="submit">CREA ACCOUNT</button>
         <div class="auth-toggle" onclick="toggleAuth()">Hai già un account? <span>Accedi</span></div>
     </form>
 </div>
@@ -202,55 +175,8 @@
 <div id="mainApp" class="container hidden">
     <button id="logoutBtn" onclick="logout()">LOGOUT</button>
     <div class="classified-tag">Restricted Access</div>
-    <h1>RECLUTAMENTO CIVILE LSPD</h1>
-    <form id="candidaturaForm">
-        <div class="section-header"># FASCICOLO OOC</div>
-        <div class="form-row">
-            <div class="form-group"><label>Nome Reale</label><input type="text" id="nomeReale" required></div>
-            <div class="form-group"><label>Età Reale</label><input type="number" id="etaReale" required></div>
+    <div id="appContent">
         </div>
-        <div class="form-group"><label>Discord ID</label><input type="text" id="discordID" placeholder="es. 1234567890" required></div>
-
-        <div class="section-header"># FASCICOLO IN-CHARACTER</div>
-        <div class="form-row">
-            <div class="form-group"><label>Nome e Cognome</label><input type="text" id="nomeIC" required></div>
-            <div class="form-group"><label>Data di Nascita</label><input type="text" id="dataNascita" placeholder="GG/MM/AAAA" required></div>
-        </div>
-        
-        <div class="form-row">
-            <div class="form-group"><label>Recapito Telefonico</label><input type="text" id="telefono" required></div>
-            <div class="form-group">
-                <label>Porto d'Armi</label>
-                <select id="portoArmi">
-                    <option value="Posseduto">Posseduto</option>
-                    <option value="Non Posseduto">Non Posseduto</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Abilitazioni di Guida</label>
-            <div class="checkbox-group">
-                <label><input type="checkbox" name="patente" value="A"> Cat. A</label>
-                <label><input type="checkbox" name="patente" value="B"> Cat. B</label>
-                <label><input type="checkbox" name="patente" value="C"> Cat. C</label>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Fedina Penale</label>
-            <select id="fedina">
-                <option value="Pulita">Pulita / Incensurato</option>
-                <option value="Pregiudizi Minori">Pregiudizi Minori</option>
-                <option value="Sporca">Precedenti Penali Gravi</option>
-            </select>
-        </div>
-
-        <div class="form-group"><label>Esperienze Pregresse</label><textarea id="esperienze" rows="2" required></textarea></div>
-        <div class="form-group"><label>Descrizione / Motivazione</label><textarea id="motivazione" rows="3" required></textarea></div>
-
-        <button type="submit" id="btnInvia">TRASMETTI AL DIPARTIMENTO</button>
-    </form>
 </div>
 
 <footer class="main-footer">
@@ -269,7 +195,7 @@
 
 <script>
     // --- CONFIGURAZIONE ---
-    const ADMIN_EMAIL = "lspd@admin.it"; // La tua email admin
+    const ADMIN_EMAIL = "lspd@admin.it";
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
 
@@ -287,6 +213,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // --- UTILITY NOTIFICHE ---
     function showNotice(message, type = 'info') {
         const container = document.getElementById('notification-container');
         const notice = document.createElement('div');
@@ -299,43 +226,12 @@
         }, 4000);
     }
 
-    // --- SICUREZZA E HARDWARE BLOCK ---
-    function checkSecurity(currentUserEmail = null) {
-        if (currentUserEmail === ADMIN_EMAIL) return false; 
-        const lockedEmail = localStorage.getItem('lspd_registered_email');
-        if (lockedEmail && currentUserEmail && lockedEmail !== currentUserEmail) {
-            showHardwareBlock();
-            return true;
-        }
-        return false;
-    }
-
-    function showHardwareBlock() {
-        const modal = document.getElementById('modalOverlay');
-        document.getElementById('modalResult').innerHTML = `
-            <h2 style="color: var(--danger); font-family: 'Orbitron';">ACCESSO NEGATO</h2>
-            <p>Dispositivo già associato a: <strong>${localStorage.getItem('lspd_registered_email')}</strong></p>
-            <button onclick="logout()" style="background: var(--danger); border:none; padding: 15px; width: 100%; color: white; cursor: pointer;">TORNA AL LOGIN</button>
-        `;
-        modal.style.display = 'flex';
-    }
-
-    // --- SISTEMA DI SBLOCCO (Easter Egg) ---
-    let sKey = "";
-    window.addEventListener('keydown', (e) => {
-        sKey += e.key.toLowerCase();
-        if (sKey.includes("sbloccatutto")) {
-            localStorage.clear();
-            alert("SISTEMA RESETTATO: Memoria locale pulita.");
-            window.location.reload();
-            sKey = "";
-        }
-    });
-
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
         if (user) {
             if (checkSecurity(user.email)) return;
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
             if (user.email === ADMIN_EMAIL) {
                 showAdminDashboard();
             } else {
@@ -344,103 +240,196 @@
         } else {
             document.getElementById('authSection').classList.remove('hidden');
             document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById('modalOverlay').style.display = 'none';
         }
     });
 
-    // --- ADMIN PANEL ---
+    // --- ADMIN DASHBOARD ---
     async function showAdminDashboard() {
-        const container = document.getElementById('mainApp');
-        document.getElementById('authSection').classList.add('hidden');
-        container.classList.remove('hidden');
-        
-        container.innerHTML = `
-            <button id="logoutBtn" onclick="logout()">LOGOUT ADMIN</button>
+        const content = document.getElementById('appContent');
+        content.innerHTML = `
             <h1>PANNELLO RECLUTAMENTO LSPD</h1>
-            <div id="adminList" style="margin-top:20px;">Caricamento...</div>
+            <div id="adminList">Caricamento database...</div>
         `;
 
         const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
-        let html = '<table style="width:100%; border-collapse: collapse; font-size:0.8rem;">';
-        html += '<tr style="color:var(--police-accent); border-bottom:1px solid blue;"><th>Prot.</th><th>Nome IC</th><th>Stato</th><th>Azioni</th></tr>';
-        
+        let html = `
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">PROT.</th>
+                        <th style="width: 40%;">NOME IC</th>
+                        <th style="width: 20%;">STATO</th>
+                        <th style="width: 20%;">AZIONI</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
         snapshot.forEach(doc => {
             const data = doc.data();
-            const color = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+            const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 'var(--police-accent)');
             html += `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding:10px;">${data.protocollo}</td>
-                    <td>${data.nomeIC}</td>
+                <tr>
+                    <td>#${data.protocollo}</td>
+                    <td title="${data.nomeIC}">${data.nomeIC}</td>
                     <td style="color:${color}; font-weight:bold;">${data.stato}</td>
-                    <td>
-                        <button onclick="updateStatus('${doc.id}', 'ACCETTATA')" style="width:35px; background:green; padding:5px; font-size:0.6rem;">OK</button>
-                        <button onclick="updateStatus('${doc.id}', 'RIFIUTATA')" style="width:35px; background:red; padding:5px; font-size:0.6rem;">NO</button>
+                    <td class="action-cell">
+                        <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
+                        <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
+                        <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
                     </td>
                 </tr>
             `;
         });
-        html += '</table>';
+        html += `</tbody></table>`;
         document.getElementById('adminList').innerHTML = html;
     }
 
-    async function updateStatus(uid, nuovoStato) {
-        if(confirm(`Impostare stato ${nuovoStato}?`)) {
-            await db.collection("candidature").doc(uid).update({ stato: nuovoStato });
-            showNotice("Aggiornato!", "success");
-            showAdminDashboard();
-        }
+    // --- MODAL DETTAGLI ---
+    async function viewDetails(id) {
+        const doc = await db.collection("candidature").doc(id).get();
+        const data = doc.data();
+        const modal = document.getElementById('modalOverlay');
+        const res = document.getElementById('modalResult');
+
+        res.innerHTML = `
+            <h2 style="font-family:'Orbitron'; color:var(--police-accent); border-bottom:1px solid blue; padding-bottom:10px;">DETTAGLI FASCICOLO #${data.protocollo}</h2>
+            <div class="detail-grid">
+                <div class="detail-item"><span class="detail-label">Nome Reale</span>${data.nomeReale}</div>
+                <div class="detail-item"><span class="detail-label">Età</span>${data.etaReale}</div>
+                <div class="detail-item"><span class="detail-label">Discord ID</span>${data.discordID}</div>
+                <div class="detail-item"><span class="detail-label">Telefono</span>${data.telefono}</div>
+                <div class="detail-item"><span class="detail-label">Data Nascita</span>${data.dataNascita}</div>
+                <div class="detail-item"><span class="detail-label">Porto d'Armi</span>${data.portoArmi}</div>
+                <div class="detail-item full"><span class="detail-label">Patenti</span>${data.patenti}</div>
+                <div class="detail-item full"><span class="detail-label">Fedina Penale</span>${data.fedina}</div>
+                <div class="detail-item full"><span class="detail-label">Esperienze</span>${data.esperienze}</div>
+                <div class="detail-item full"><span class="detail-label">Motivazione</span>${data.motivazione}</div>
+            </div>
+            <button onclick="closeModal()" style="margin-top:20px; padding:10px;">CHIUDI SCHEDA</button>
+        `;
+        modal.style.display = 'flex';
     }
 
-    // --- DASHBOARD CITTADINO ---
-    async function checkUserApplication(uid) {
-        const doc = await db.collection("candidature").doc(uid).get();
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        if (doc.exists) showStatusPage(doc.data());
-    }
+    // --- MODAL CONFERMA PROFESSIONALE ---
+    function confirmAction(id, status) {
+        const modal = document.getElementById('modalOverlay');
+        const res = document.getElementById('modalResult');
+        const color = status === 'ACCETTATA' ? 'var(--success)' : 'var(--danger)';
 
-    function showStatusPage(data) {
-        const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
-        document.getElementById('mainApp').innerHTML = `
-            <button id="logoutBtn" onclick="logout()">LOGOUT</button>
-            <div class="classified-tag">${data.stato}</div>
-            <h1>STATO PRATICA: #${data.protocollo}</h1>
-            <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 25px; margin-top: 30px; text-align: center;">
-                <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.5rem;">${data.stato}</p>
-                <div style="margin: 20px 0; text-align: left; font-size: 0.9rem;">
-                    <p>Cittadino: <strong>${data.nomeIC}</strong></p>
-                    <p>Protocollo: <strong>#${data.protocollo}</strong></p>
-                    <hr style="border-color: rgba(0,85,255,0.2);">
-                    <p>${data.stato === 'ACCETTATA' ? 'Recati in centrale per l\'arruolamento.' : 'Il Comando sta valutando il tuo fascicolo.'}</p>
+        res.innerHTML = `
+            <div style="padding:20px;">
+                <h2 style="font-family:'Orbitron'; color:${color};">RICHIESTA AUTORIZZAZIONE</h2>
+                <p>Sei sicuro di voler impostare lo stato su <strong style="color:${color}">${status}</strong> per questa pratica?</p>
+                <div style="display:flex; gap:10px; margin-top:30px;">
+                    <button onclick="closeModal()" style="background:#333; border:none;">ANNULLA</button>
+                    <button onclick="processUpdate('${id}', '${status}')" style="background:${color}; border:none; color:${status === 'ACCETTATA' ? '#000' : '#fff'}">CONFERMA OPERAZIONE</button>
                 </div>
             </div>
         `;
+        modal.style.display = 'flex';
     }
 
-    // --- LOGIN / REGISTER ---
-    document.getElementById('loginForm').addEventListener('submit', e => {
-        e.preventDefault();
-        auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
-            .catch(() => showNotice("Credenziali errate", "error"));
-    });
+    async function processUpdate(id, status) {
+        try {
+            await db.collection("candidature").doc(id).update({ stato: status });
+            closeModal();
+            showNotice(`Pratica aggiornata: ${status}`, "success");
+            showAdminDashboard();
+        } catch (e) {
+            showNotice("Errore database", "error");
+        }
+    }
 
-    document.getElementById('registerForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const email = document.getElementById('regEmail').value;
-        auth.createUserWithEmailAndPassword(email, document.getElementById('regPassword').value)
-            .then(() => {
-                localStorage.setItem('lspd_registered_email', email);
-                showNotice("Account registrato", "success");
-            })
-            .catch(err => showNotice(err.message, "error"));
-    });
+    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
-    // --- INVIO CANDIDATURA ---
-    document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
+    // --- LOGICA UTENTE (FORM) ---
+    async function checkUserApplication(uid) {
+        const doc = await db.collection("candidature").doc(uid).get();
+        const content = document.getElementById('appContent');
+        
+        if (doc.exists) {
+            const data = doc.data();
+            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+            content.innerHTML = `
+                <div class="classified-tag">${data.stato}</div>
+                <h1>STATO PRATICA: #${data.protocollo}</h1>
+                <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 25px; margin-top: 30px; text-align: center;">
+                    <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.5rem;">${data.stato}</p>
+                    <div style="margin: 20px 0; text-align: left; font-size: 0.9rem;">
+                        <p>Cittadino: <strong>${data.nomeIC}</strong></p>
+                        <p>Protocollo: <strong>#${data.protocollo}</strong></p>
+                        <hr style="border-color: rgba(0,85,255,0.2);">
+                        <p>${data.stato === 'ACCETTATA' ? 'Recati in centrale per l\'arruolamento.' : (data.stato === 'RIFIUTATA' ? 'Candidatura respinta dal comando.' : 'Il Comando sta valutando il tuo fascicolo.')}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            renderCandidaturaForm();
+        }
+    }
+
+    function renderCandidaturaForm() {
+        document.getElementById('appContent').innerHTML = `
+            <h1>RECLUTAMENTO CIVILE LSPD</h1>
+            <form id="candidaturaForm">
+                <div class="section-header"># FASCICOLO OOC</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Nome Reale</label><input type="text" id="nomeReale" required></div>
+                    <div class="form-group"><label>Età Reale</label><input type="number" id="etaReale" required></div>
+                </div>
+                <div class="form-group"><label>Discord ID</label><input type="text" id="discordID" required></div>
+
+                <div class="section-header"># FASCICOLO IN-CHARACTER</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Nome e Cognome</label><input type="text" id="nomeIC" required></div>
+                    <div class="form-group"><label>Data di Nascita</label><input type="text" id="dataNascita" placeholder="GG/MM/AAAA" required></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group"><label>Recapito Telefonico</label><input type="text" id="telefono" required></div>
+                    <div class="form-group">
+                        <label>Porto d'Armi</label>
+                        <select id="portoArmi">
+                            <option value="Posseduto">Posseduto</option>
+                            <option value="Non Posseduto">Non Posseduto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Abilitazioni di Guida</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="patente" value="A"> Cat. A</label>
+                        <label><input type="checkbox" name="patente" value="B"> Cat. B</label>
+                        <label><input type="checkbox" name="patente" value="C"> Cat. C</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fedina Penale</label>
+                    <select id="fedina">
+                        <option value="Pulita">Pulita / Incensurato</option>
+                        <option value="Pregiudizi Minori">Pregiudizi Minori</option>
+                        <option value="Sporca">Precedenti Penali Gravi</option>
+                    </select>
+                </div>
+
+                <div class="form-group"><label>Esperienze Pregresse</label><textarea id="esperienze" rows="2" required></textarea></div>
+                <div class="form-group"><label>Descrizione / Motivazione</label><textarea id="motivazione" rows="3" required></textarea></div>
+
+                <button type="submit" id="btnInvia">TRASMETTI AL DIPARTIMENTO</button>
+            </form>
+        `;
+
+        document.getElementById('candidaturaForm').addEventListener('submit', handleFormSubmit);
+    }
+
+    async function handleFormSubmit(e) {
         e.preventDefault();
         const btn = document.getElementById('btnInvia');
         btn.disabled = true;
-        btn.innerText = "TRASMISSIONE...";
+        btn.innerText = "TRASMISSIONE IN CORSO...";
 
         const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(el => el.value).join(", ");
         const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
@@ -465,7 +454,6 @@
 
         try {
             await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
-
             await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -481,22 +469,55 @@
                             { name: "💼 ESPERIENZE", value: formData.esperienze, inline: false },
                             { name: "🎯 MOTIVAZIONE", value: formData.motivazione, inline: false }
                         ],
-                        footer: { text: `LSPD - Gestione reclutatori | ${formData.dataInvio}` }
+                        footer: { text: `LSPD Portal | ${formData.dataInvio}` }
                     }]
                 })
             });
             window.location.reload();
-        } catch (e) { showNotice("Errore!", "error"); btn.disabled = false; }
-    });
-
-    function toggleAuth() {
-        if (localStorage.getItem('lspd_registered_email')) {
-            showNotice("Dispositivo già associato.", "error");
-            return;
+        } catch (e) {
+            showNotice("Errore invio", "error");
+            btn.disabled = false;
         }
+    }
+
+    // --- SICUREZZA ---
+    function checkSecurity(email) {
+        if (email === ADMIN_EMAIL) return false;
+        const locked = localStorage.getItem('lspd_registered_email');
+        if (locked && locked !== email) {
+            document.getElementById('modalResult').innerHTML = `
+                <h2 style="color:var(--danger); font-family:'Orbitron';">DISPOSITIVO BLOCCATO</h2>
+                <p>Questo terminale è già associato a: <strong>${locked}</strong></p>
+                <button onclick="logout()">LOGOUT</button>
+            `;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            return true;
+        }
+        return false;
+    }
+
+    // --- AUTH UI ---
+    function toggleAuth() {
         document.getElementById('loginForm').classList.toggle('hidden');
         document.getElementById('registerForm').classList.toggle('hidden');
     }
+
+    document.getElementById('loginForm').addEventListener('submit', e => {
+        e.preventDefault();
+        auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
+            .catch(() => showNotice("Credenziali errate", "error"));
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        auth.createUserWithEmailAndPassword(email, document.getElementById('regPassword').value)
+            .then(() => {
+                localStorage.setItem('lspd_registered_email', email);
+                showNotice("Account creato", "success");
+            })
+            .catch(err => showNotice(err.message, "error"));
+    });
 
     function logout() { auth.signOut().then(() => window.location.reload()); }
 </script>
