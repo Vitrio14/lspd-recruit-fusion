@@ -283,6 +283,9 @@
 
     // --- NUOVA FUNZIONE: BLOCCO HARDWARE ---
     function checkTerminalLock() {
+        // Se abbiamo appena inviato (flag temporaneo), non bloccare ora
+        if (sessionStorage.getItem('just_submitted')) return false;
+
         if (localStorage.getItem('lspd_hardware_lock')) {
             const modal = document.getElementById('modalOverlay');
             document.getElementById('modalResult').innerHTML = `
@@ -290,7 +293,7 @@
                 <p>È stato rilevato un account già esistente collegato a questo terminale.</p>
                 <div style="margin: 25px 0; border: 1px solid var(--danger); padding: 15px; background: rgba(255, 68, 68, 0.05);">
                     <p style="font-size: 0.85rem; color: #ff4444;">
-                        SICUREZZA TERMINALE: Non è consentito creare account multipli. Contatta il capo della polizia di Los Santos se pensi si tratti di un errore.
+                        SICUREZZA TERMINALE: Non è consentito creare account multipli. Contatta il comando LSPD se ritieni si tratti di un errore.
                     </p>
                 </div>
             `;
@@ -328,18 +331,21 @@
 
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
-        if (checkTerminalLock()) return; // Blocca se c'è il marchio hardware
+        if (checkTerminalLock()) return; 
 
         if (user) {
             checkUserApplication(user.uid);
         } else {
             authSection.classList.remove('hidden');
             mainApp.classList.add('hidden');
-            document.getElementById('modalOverlay').style.display = 'none';
+            if (!sessionStorage.getItem('just_submitted')) {
+                document.getElementById('modalOverlay').style.display = 'none';
+            }
         }
     });
 
     async function checkUserApplication(uid) {
+        if (sessionStorage.getItem('just_submitted')) return; // Non controllare se abbiamo appena inviato
         try {
             const doc = await db.collection("candidature").doc(uid).get();
             if (doc.exists) {
@@ -374,7 +380,6 @@
         mainApp.classList.add('hidden');
     }
 
-    // --- LOGICA AUTH ---
     function toggleAuth() {
         if (checkTerminalLock()) return;
         loginForm.classList.toggle('hidden');
@@ -408,10 +413,10 @@
     }
 
     function setLockAndLogout() {
-    // Imposta il blocco hardware solo nel momento in cui l'utente preme il tasto per uscire
-    localStorage.setItem('lspd_hardware_lock', 'true');
-    logout();
-}
+        localStorage.setItem('lspd_hardware_lock', 'true');
+        sessionStorage.removeItem('just_submitted');
+        logout();
+    }
 
     // --- LOGICA INVIO CANDIDATURA ---
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
@@ -423,7 +428,6 @@
         btn.disabled = true;
 
         try {
-            // --- NUOVO: CONTROLLO CROSS-ACCOUNT DISCORD ID ---
             const checkID = await db.collection("candidature").where("discordID", "==", discordIDValue).get();
             if (!checkID.empty) {
                 showNotice("ID DISCORD GIÀ PRESENTE IN ARCHIVIO", "error");
@@ -449,13 +453,15 @@
                 motivazione: document.getElementById('motivazione').value
             };
 
+            // ATTIVIAMO IL FLAG TEMPORANEO
+            sessionStorage.setItem('just_submitted', 'true');
+
             await db.collection("candidature").doc(user.uid).set({
                 protocollo: registroID,
                 email: user.email,
-                discordID: formData.discordID, // Importante per il controllo futuro
+                discordID: formData.discordID,
                 dataInvio: new Date().toLocaleString()
             });
-
 
             const payload = {
                 content: `📢 **Nuova Candidatura Civile!** ${ROLE_TAGS}`,
@@ -482,28 +488,24 @@
             });
 
             showNotice("DATABASE AGGIORNATO", "success");
-            const modal = document.getElementById('modalOverlay');
             
-// SOSTITUISCI il blocco innerHTML del successo con questo:
-document.getElementById('modalResult').innerHTML = `
-    <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
-    <p style="font-size: 0.9rem; color: #bbb;">La tua candidatura è stata acquisita dal sistema centrale.</p>
-    <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
-        <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
-        <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-            ⚠️ <strong>AZIONI RICHIESTE:</strong>
-        </p>
-        <ul style="font-size: 0.85rem; color: #ccc; padding-left: 20px; line-height: 1.4;">
-            <li>Conserva il Codice Protocollo: è indispensabile per la selezione.</li>
-            <li>Se idoneo, verrai contattato tramite <strong>recapito telefonico</strong> o <strong>giornalino statale</strong>.</li>
-            <li>Dovrai recarti in centrale con il codice protocollo e chiedere di poter parlare con un <strong>reclutatore</strong>.</li>
-        </ul>
-    </div>
-    <button onclick="setLockAndLogout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
-        CHIUDI E TORNA AL LOGIN
-    </button>
-`;
-            modal.style.display = 'flex';
+            document.getElementById('modalResult').innerHTML = `
+                <h2 style="color: var(--police-accent); font-family: 'Orbitron'; letter-spacing: 2px;">REPORT ARCHIVIATO</h2>
+                <div style="margin: 25px 0; border-left: 3px solid var(--police-blue); padding: 15px 20px; text-align: left; background: rgba(0, 85, 255, 0.05);">
+                    <p style="margin: 5px 0;"><strong>CODICE PROTOCOLLO:</strong> <span style="color: var(--police-accent);">#${registroID}</span></p>
+                    <p style="font-size: 0.9rem; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                        ⚠️ <strong>AZIONI RICHIESTE:</strong>
+                    </p>
+                    <ul style="font-size: 0.85rem; color: #ccc; padding-left: 20px; line-height: 1.4;">
+                        <li>Conserva il Codice Protocollo.</li>
+                        <li>Verrai contattato tramite recapito telefonico.</li>
+                    </ul>
+                </div>
+                <button onclick="setLockAndLogout()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;">
+                    CHIUDI E TORNA AL LOGIN
+                </button>
+            `;
+            document.getElementById('modalOverlay').style.display = 'flex';
 
         } catch (error) {
             console.error(error);
@@ -513,10 +515,10 @@ document.getElementById('modalResult').innerHTML = `
         }
     });
 
-    // Controllo iniziale
     checkTerminalLock();
 </script>
 </body>
 </html>
+
 
 
