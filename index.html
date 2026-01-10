@@ -268,7 +268,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-    // --- FUNZIONI DI SERVIZIO ---
+    // --- CONFIGURAZIONE SERVIZIO ---
+    const ADMIN_EMAIL = "lspd@admin.it"; // CAMBIA QUESTA CON LA TUA EMAIL
+
     function showNotice(message, type = 'info') {
         const container = document.getElementById('notification-container');
         const notice = document.createElement('div');
@@ -301,6 +303,7 @@
 
     // --- LOGICA DI SICUREZZA ---
     function checkSecurity(currentUserEmail = null) {
+        if (currentUserEmail === ADMIN_EMAIL) return false; 
         const lockedEmail = localStorage.getItem('lspd_registered_email');
         if (lockedEmail && currentUserEmail && lockedEmail !== currentUserEmail) {
             showHardwareBlock();
@@ -313,24 +316,21 @@
         const modal = document.getElementById('modalOverlay');
         document.getElementById('modalResult').innerHTML = `
             <h2 style="color: var(--danger); font-family: 'Orbitron';">ACCESSO NEGATO</h2>
-            <p>Questo terminale è già associato a un'altra identità.</p>
-            <div style="margin: 25px 0; border: 1px solid var(--danger); padding: 15px; background: rgba(255, 68, 68, 0.05);">
-                <p style="font-size: 0.85rem; color: #ff4444;">
-                    SICUREZZA: Accedi con l'email originale: <strong>${localStorage.getItem('lspd_registered_email')}</strong>
-                </p>
-            </div>
-            <button onclick="logout()" style="background: var(--danger); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">TORNA AL LOGIN</button>
+            <p>Dispositivo già associato a: <strong>${localStorage.getItem('lspd_registered_email')}</strong></p>
+            <button onclick="logout()" style="background: var(--danger); border:none; padding: 15px; width: 100%; color: white; cursor: pointer;">TORNA AL LOGIN</button>
         `;
         modal.style.display = 'flex';
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
     }
 
     // --- GESTIONE SESSIONE ---
     auth.onAuthStateChanged(user => {
         if (user) {
             if (checkSecurity(user.email)) return;
-            checkUserApplication(user.uid);
+            if (user.email === ADMIN_EMAIL) {
+                showAdminDashboard();
+            } else {
+                checkUserApplication(user.uid);
+            }
         } else {
             document.getElementById('authSection').classList.remove('hidden');
             document.getElementById('mainApp').classList.add('hidden');
@@ -338,49 +338,89 @@
         }
     });
 
+    // --- DASHBOARD ADMIN ---
+    async function showAdminDashboard() {
+        const container = document.getElementById('mainApp');
+        document.getElementById('authSection').classList.add('hidden');
+        container.classList.remove('hidden');
+        
+        container.innerHTML = `
+            <button id="logoutBtn" onclick="logout()">LOGOUT ADMIN</button>
+            <h1>PANNELLO RECLUTAMENTO LSPD</h1>
+            <div id="adminList" style="margin-top:20px;">Caricamento candidature...</div>
+        `;
+
+        const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
+        let html = '<table style="width:100%; border-collapse: collapse; font-size:0.8rem; margin-bottom:50px;">';
+        html += '<tr style="color:var(--police-accent); border-bottom:1px solid blue;"><th>Prot.</th><th>Nome IC</th><th>Stato</th><th>Azioni</th></tr>';
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+            html += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding:10px;">${data.protocollo}</td>
+                    <td>${data.nomeIC}</td>
+                    <td style="color:${statusColor}; font-weight:bold;">${data.stato || 'IN REVISIONE'}</td>
+                    <td>
+                        <button onclick="updateStatus('${doc.id}', 'ACCETTATA')" style="padding:5px; background:green; width:auto; font-size:0.6rem;">OK</button>
+                        <button onclick="updateStatus('${doc.id}', 'RIFIUTATA')" style="padding:5px; background:red; width:auto; font-size:0.6rem;">NO</button>
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</table>';
+        document.getElementById('adminList').innerHTML = html;
+    }
+
+    async function updateStatus(uid, nuovoStato) {
+        if(confirm(`Impostare come ${nuovoStato}?`)) {
+            await db.collection("candidature").doc(uid).update({ stato: nuovoStato });
+            showNotice("Stato aggiornato", "success");
+            showAdminDashboard();
+        }
+    }
+
+    // --- DASHBOARD CITTADINO ---
     async function checkUserApplication(uid) {
         try {
             const doc = await db.collection("candidature").doc(uid).get();
             document.getElementById('authSection').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
-
-            if (doc.exists) {
-                showStatusPage(doc.data());
-            } else {
-                showNotice("ACCESSO EFFETTUATO", "success");
-            }
+            if (doc.exists) showStatusPage(doc.data());
         } catch (error) { console.error(error); }
     }
 
     function showStatusPage(data) {
+        const stato = data.stato || 'IN REVISIONE';
+        let statusColor = '#ffd700';
+        let message = "Il tuo fascicolo è attualmente sotto esame dal Comando LSPD.";
+        
+        if(stato === 'ACCETTATA') {
+            statusColor = '#00ff88';
+            message = "CONGRATULAZIONI! Recati in centrale con il codice protocollo per l'arruolamento.";
+        } else if (stato === 'RIFIUTATA') {
+            statusColor = '#ff4444';
+            message = "Siamo spiacenti, la tua candidatura non è stata accolta.";
+        }
+
         const container = document.getElementById('mainApp');
         container.innerHTML = `
             <button id="logoutBtn" onclick="logout()">LOGOUT</button>
-            <div class="classified-tag">File Locked</div>
+            <div class="classified-tag">${stato}</div>
             <h1>STATO CANDIDATURA: #${data.protocollo}</h1>
-            <div style="background: rgba(0, 85, 255, 0.05); border: 1px solid var(--police-blue); padding: 25px; margin-top: 30px; text-align: center;">
-                <p style="color: var(--police-accent); font-family: 'Orbitron'; font-size: 1.2rem;">FASCICOLO IN REVISIONE</p>
-                <p>Cittadino: <strong>${data.nomeIC}</strong></p>
+            <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 25px; margin-top: 30px; text-align: center;">
+                <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.5rem;">${stato}</p>
+                <p style="margin: 15px 0;">${message}</p>
                 <div style="margin: 20px 0; padding: 15px; border: 1px solid rgba(0,85,255,0.3); text-align: left; font-size: 0.9rem;">
-                    <p>• Conserva il protocollo: <strong>#${data.protocollo}</strong></p>
-                    <p>• Se risulterai idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.</p>
-                    <p>• In caso di convocazione, presentati in centrale fornendo il codice al reclutatore.</p>
+                    <p>• Protocollo: <strong>#${data.protocollo}</strong></p>
+                    <p>• Nome: <strong>${data.nomeIC}</strong></p>
                 </div>
-                <p style="font-size: 0.75rem; color: #777; font-style: italic;">Inviata il: ${data.dataInvio}</p>
             </div>
         `;
     }
 
-    // --- AZIONI FORM ---
-    function toggleAuth() {
-        if (localStorage.getItem('lspd_registered_email')) {
-            showNotice("Dispositivo già associato a un account.", "error");
-            return;
-        }
-        document.getElementById('loginForm').classList.toggle('hidden');
-        document.getElementById('registerForm').classList.toggle('hidden');
-    }
-
+    // --- LOGICA FORM E INVIO ---
     document.getElementById('loginForm').addEventListener('submit', e => {
         e.preventDefault();
         auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
@@ -397,8 +437,6 @@
             })
             .catch(err => showNotice(err.message, "error"));
     });
-
-    function logout() { auth.signOut().then(() => window.location.reload()); }
 
     document.getElementById('candidaturaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -423,85 +461,76 @@
             esperienze: document.getElementById('esperienze').value,
             motivazione: document.getElementById('motivazione').value,
             dataInvio: new Date().toLocaleString(),
-            email: auth.currentUser.email
+            email: auth.currentUser.email,
+            stato: 'IN REVISIONE'
         };
 
         try {
-            // Verifica duplicato Discord
-            const checkID = await db.collection("candidature").where("discordID", "==", formData.discordID).get();
-            if (!checkID.empty) {
-                showNotice("Discord ID già registrato", "error");
-                btn.disabled = false;
-                return;
-            }
-
-            // Salva su Database
             await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
-
-            // Webhook Completo
+            
+// Webhook con INFO COMPLETE
             await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: `🚨 **NUOVA CANDIDATURA RICEVUTA** ${ROLE_TAGS}`,
                     embeds: [{
-                        title: `FASCICOLO ARRUOLAMENTO #${registroID}`,
-                        color: 2123412,
+                        title: `FASCICOLO ARRUOLAMENTO #${formData.protocollo}`,
+                        color: 2123412, // Blu Polizia
                         fields: [
-                            { name: "👤 Info OOC", value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, inline: true },
-                            { name: "📋 Info IC", value: `**Nome:** ${formData.nomeIC}\n**Data Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, inline: true },
-                            { name: "🛡️ Stato Legale", value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}` },
-                            { name: "💼 Esperienze", value: formData.esperienze },
-                            { name: "🎯 Motivazione", value: formData.motivazione }
+                            { 
+                                name: "👤 INFO OOC", 
+                                value: `**Nome:** ${formData.nomeReale}\n**Età:** ${formData.etaReale}\n**Discord:** ${formData.discordID}`, 
+                                inline: true 
+                            },
+                            { 
+                                name: "📋 INFO IC", 
+                                value: `**Nome:** ${formData.nomeIC}\n**Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, 
+                                inline: true 
+                            },
+                            { 
+                                name: "🛡️ STATO LEGALE", 
+                                value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}`, 
+                                inline: false 
+                            },
+                            { 
+                                name: "💼 ESPERIENZE PREGRESSE", 
+                                value: formData.esperienze || "Nessuna dichiarata", 
+                                inline: false 
+                            },
+                            { 
+                                name: "🎯 MOTIVAZIONE", 
+                                value: formData.motivazione || "Nessuna dichiarata", 
+                                inline: false 
+                            }
                         ],
-                        footer: { text: `LSPD - Gestione reclutatori | Data: ${formData.dataInvio}` }
+                        footer: { text: `LSPD - Gestione reclutatori | Data: ${formData.dataInvio}` },
+                        thumbnail: { url: "https://i.imgur.com/8kX6pM9.png" } // Opzionale: link a un piccolo logo LSPD
                     }]
                 })
             });
 
-            // Mostra Modal di Successo Finale
-            document.getElementById('modalResult').innerHTML = `
-                <h2 style="color: var(--police-accent); font-family: 'Orbitron';">INVIO COMPLETATO</h2>
-<div style="margin: 20px 0; border: 1px solid var(--police-blue); padding: 15px; background: rgba(0,85,255,0.1); text-align: left;">
-    <p style="font-size: 1.1rem; text-align:center; margin-bottom: 10px;">
-        PROTOCOLLO: <strong>#${registroID}</strong>
-    </p>
-    <hr style="border: 0; border-top: 1px solid var(--police-blue); margin: 15px 0;">
-    
-    <p style="font-size: 0.9rem; margin-bottom: 8px;">
-        1. <strong>Conserva questo codice: #${registroID}</strong>, ti servirà per i prossimi step.
-    </p>
-    
-    <p style="font-size: 0.9rem; margin-bottom: 8px;">
-        2. Se idoneo, verrai contattato tramite <strong>telefono</strong> o <strong>giornalino statale</strong>.
-    </p>
-    
-    <p style="font-size: 0.9rem; margin-bottom: 0;">
-        3. Dovrai recarti in centrale con il codice protocollo da fornire a un reclutatore.
-    </p>
-</div>
-                <button onclick="window.location.reload()" style="background: var(--police-blue); border:none; padding: 15px; width: 100%; color: white; cursor: pointer; font-family: 'Orbitron';">HO CAPITO</button>
-            `;
-            document.getElementById('modalOverlay').style.display = 'flex';
-
+            window.location.reload();
         } catch (error) {
-            showNotice("Errore durante l'invio", "error");
+            showNotice("Errore invio", "error");
             btn.disabled = false;
         }
     });
 
-    let sKey = "";
-    window.addEventListener('keydown', (e) => {
-        sKey += e.key;
-        if (sKey.includes("sbloccatutto")) {
-            localStorage.clear();
-            alert("Memoria pulita.");
-            window.location.reload();
+    function toggleAuth() {
+        if (localStorage.getItem('lspd_registered_email')) {
+            showNotice("Dispositivo già associato.", "error");
+            return;
         }
-    });
+        document.getElementById('loginForm').classList.toggle('hidden');
+        document.getElementById('registerForm').classList.toggle('hidden');
+    }
+
+    function logout() { auth.signOut().then(() => window.location.reload()); }
 </script>
 </body>
 </html>
+
 
 
 
