@@ -16,6 +16,7 @@
             --border-blue: #0055ff;
             --neon-glow: rgba(0, 85, 255, 0.4);
             --danger: #ff4444;
+            --success: #00ff88;
         }
 
         body {
@@ -32,6 +33,48 @@
         }
 
         .police-logo { width: 120px; margin-top: 30px; filter: drop-shadow(0 0 15px var(--neon-glow)); z-index: 5; }
+
+        /* --- STILE NOTIFICHE (TOASTS) --- */
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notice {
+            background: rgba(13, 17, 23, 0.95);
+            border-left: 4px solid var(--police-blue);
+            color: white;
+            padding: 15px 25px;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            min-width: 250px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            animation: slideIn 0.3s ease forwards;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notice.success { border-left-color: var(--success); text-shadow: 0 0 5px var(--success); }
+        .notice.error { border-left-color: var(--danger); text-shadow: 0 0 5px var(--danger); }
+        .notice.info { border-left-color: var(--police-accent); text-shadow: 0 0 5px var(--police-accent); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { transform: translateX(20px); opacity: 0; }
+        }
+
+        /* --- FINE STILE NOTIFICHE --- */
 
         .container, .auth-container {
             width: 90%;
@@ -123,6 +166,8 @@
     </style>
 </head>
 <body>
+
+<div id="notification-container"></div>
 
 <img src="./logo.png" alt="LSPD Logo" class="police-logo">
 
@@ -225,6 +270,21 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
 <script>
+    // --- FUNZIONE NOTIFICHE ---
+    function showNotice(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        const notice = document.createElement('div');
+        notice.className = `notice ${type}`;
+        notice.innerHTML = `<span>${message}</span>`;
+        
+        container.appendChild(notice);
+
+        setTimeout(() => {
+            notice.style.animation = "fadeOut 0.5s ease forwards";
+            setTimeout(() => notice.remove(), 500);
+        }, 4000);
+    }
+
     // --- CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
@@ -253,10 +313,10 @@
         if (user) {
             authSection.classList.add('hidden');
             mainApp.classList.remove('hidden');
+            showNotice("SISTEMA ACCESSO: UTENTE AUTENTICATO", "success");
         } else {
             authSection.classList.remove('hidden');
             mainApp.classList.add('hidden');
-            // Reset grafico pulsante login
             btnLogin.innerText = "AUTENTICAZIONE";
             btnLogin.disabled = false;
         }
@@ -275,7 +335,7 @@
         btnLogin.disabled = true;
         auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)
             .catch(err => {
-                alert("Errore: Credenziali errate o utente non trovato.");
+                showNotice("ERRORE: CREDENZIALI NON VALIDE", "error");
                 btnLogin.innerText = "AUTENTICAZIONE";
                 btnLogin.disabled = false;
             });
@@ -285,12 +345,13 @@
     registerForm.addEventListener('submit', e => {
         e.preventDefault();
         auth.createUserWithEmailAndPassword(document.getElementById('regEmail').value, document.getElementById('regPassword').value)
-            .then(() => alert("Account creato con successo! Accesso in corso..."))
-            .catch(err => alert("Errore: " + err.message));
+            .then(() => showNotice("ACCOUNT CREATO - BENVENUTO", "success"))
+            .catch(err => showNotice("ERRORE: " + err.message, "error"));
     });
 
     function logout() {
         auth.signOut().then(() => {
+            showNotice("LOGOUT EFFETTUATO", "info");
             document.getElementById('modalOverlay').style.display = 'none';
             document.getElementById('candidaturaForm').reset();
         });
@@ -328,6 +389,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(() => {
+            showNotice("DATI TRASMESSI AL DATABASE LSPD", "success");
             const modal = document.getElementById('modalOverlay');
             document.getElementById('modalResult').innerHTML = `
                 <h2 style="color: var(--police-accent); font-family: 'Orbitron';">REPORT ARCHIVIATO</h2>
@@ -342,7 +404,7 @@
             btn.innerText = "TRASMETTI AL DIPARTIMENTO";
             btn.disabled = false;
         }).catch(err => {
-            alert("Errore di rete nell'invio.");
+            showNotice("ERRORE DI TRASMISSIONE DATI", "error");
             btn.disabled = false;
             btn.innerText = "TRASMETTI AL DIPARTIMENTO";
         });
