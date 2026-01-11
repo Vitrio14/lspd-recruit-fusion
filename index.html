@@ -403,7 +403,7 @@ function checkSecurity(email) {
                         <p>Protocollo: <strong style="color:white;">#${data.protocollo}</strong></p>
                         <hr style="border-color: rgba(0,85,255,0.1); margin: 20px 0;">
                         <p style="color: #aaa; font-style: italic;">
-                            ${data.stato === 'ACCETTATA' ? 'Autorizzazione concessa. Presentati in centrale.' : (data.stato === 'RIFIUTATA' ? 'Spiacenti, la tua candidatura è stata respinta dal Comando.' : 'Fascicolo in attesa di revisione da parte del Comando LSPD.')}
+                            ${data.stato === 'ACCETTATA' ? 'Candidatura accettata. Presentati in centrale, presentando il codice pratica.' : (data.stato === 'RIFIUTATA' ? 'Spiacenti, la tua candidatura è stata respinta dal Comando.' : 'Fascicolo in attesa di revisione da parte del Comando LSPD.')}
                         </p>
                     </div>
                 </div>`;
@@ -561,4 +561,5 @@ document.getElementById('registerForm').addEventListener('submit', e => {
 </script>
 </body>
 </html>
+
 
