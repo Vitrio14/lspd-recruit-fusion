@@ -157,18 +157,18 @@
 
 <div id="authSection" class="auth-container">
     <div class="classified-tag" style="border-color: var(--police-blue); color: var(--police-blue);">Access Control</div>
-    <h1 id="authTitle">ACCESSO TERMINALE</h1>
+    <h1 id="authTitle">ACCESSO CIVILE</h1>
     
     <form id="loginForm">
         <div class="form-group">
-            <label>Email Operativa</label>
+            <label>Email</label>
             <input type="email" id="loginEmail" required placeholder="civile@esempio.it">
         </div>
         <div class="form-group">
             <label>Password</label>
             <input type="password" id="loginPassword" required placeholder="••••••••">
         </div>
-        <button type="submit">AUTENTICAZIONE</button>
+        <button type="submit">EFFETTUA IL LOGIN</button>
         <div class="auth-toggle" onclick="toggleAuth()">Nuovo cittadino? <span>Registrati qui</span></div>
     </form>
 
@@ -188,7 +188,7 @@
 
 <div id="mainApp" class="container hidden">
     <button id="logoutBtn" onclick="logout()">LOGOUT</button>
-    <div class="classified-tag" id="mainStatusTag">Restricted Access</div>
+    <div class="classified-tag" id="mainStatusTag">Accesso limitato</div>
     <div id="appContent"></div>
 </div>
 
@@ -289,7 +289,7 @@ function checkSecurity(email) {
             document.getElementById('authSection').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             if (user.email === ADMIN_EMAIL) {
-                document.getElementById('mainStatusTag').innerText = "ADMIN PANEL";
+                document.getElementById('mainStatusTag').innerText = "PANNELLO ALTO COMANDO";
                 document.getElementById('mainStatusTag').style.borderColor = "var(--police-accent)";
                 document.getElementById('mainStatusTag').style.color = "var(--police-accent)";
                 showAdminDashboard();
@@ -561,5 +561,6 @@ document.getElementById('registerForm').addEventListener('submit', e => {
 </script>
 </body>
 </html>
+
 
 
