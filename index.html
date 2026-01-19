@@ -147,6 +147,20 @@
         .checkbox-group { display: flex; gap: 15px; background: rgba(0, 85, 255, 0.05); padding: 12px; border: 1px solid rgba(0, 85, 255, 0.2); flex-wrap: wrap; }
         .checkbox-group label { display: flex; align-items: center; gap: 8px; color: #fff; text-transform: none; font-size: 1rem; }
         .main-footer { width: 100%; padding: 20px 0; background: rgba(5, 7, 10, 0.95); border-top: 1px solid var(--police-blue); text-align: center; position: fixed; bottom: 0; left: 0; z-index: 100; }
+        
+        /* Stili aggiunti per link e messaggi */
+        .discord-btn { 
+            display: inline-block; 
+            margin-top: 15px; 
+            padding: 10px 20px; 
+            background: #5865F2; 
+            color: white; 
+            text-decoration: none; 
+            font-family: 'Orbitron'; 
+            font-size: 0.8rem;
+            border-radius: 3px;
+        }
+        .status-msg { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -211,6 +225,7 @@
     const ADMIN_EMAIL = "lspd-reclutatori@fusion.it";
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
+    const DISCORD_INVITE = "https://discord.gg/nDWsPqp4NX";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
@@ -227,34 +242,28 @@
     const db = firebase.firestore();
 
     // --- FUNZIONI DI SICUREZZA ---
-function checkSecurity(email) {
-    if (email === ADMIN_EMAIL) return false; 
-
-    const locked = localStorage.getItem('lspd_registered_email');
-    
-    // Se non c'è nulla nel localStorage (es. utente ha pulito cache) 
-    // ma l'utente è loggato, resettiamo il blocco sulla mail attuale
-    if (!locked && email) {
-        localStorage.setItem('lspd_registered_email', email);
+    function checkSecurity(email) {
+        if (email === ADMIN_EMAIL) return false; 
+        const locked = localStorage.getItem('lspd_registered_email');
+        if (!locked && email) {
+            localStorage.setItem('lspd_registered_email', email);
+            return false;
+        }
+        if (locked && locked !== email) {
+            document.getElementById('mainApp').innerHTML = ""; 
+            document.getElementById('modalResult').innerHTML = `
+                <div style="padding:20px;">
+                    <h2 style="color:var(--danger); font-family:'Orbitron';">SISTEMA BLOCCATO</h2>
+                    <p>Accesso negato. Questo terminale è registrato sotto un'altra identità civica.</p>
+                    <button onclick="logout()" style="margin-top:20px;">TORNA AL LOGIN</button>
+                </div>`;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            return true;
+        }
         return false;
     }
 
-    if (locked && locked !== email) {
-        document.getElementById('mainApp').innerHTML = ""; // Svuota tutto per sicurezza
-        document.getElementById('modalResult').innerHTML = `
-            <div style="padding:20px;">
-                <h2 style="color:var(--danger); font-family:'Orbitron';">SISTEMA BLOCCATO</h2>
-                <p>Accesso negato. Questo terminale è registrato sotto un'altra identità civica.</p>
-                <button onclick="logout()" style="margin-top:20px;">TORNA AL LOGIN</button>
-            </div>
-        `;
-        document.getElementById('modalOverlay').style.display = 'flex';
-        return true;
-    }
-    return false;
-}
-
-    // --- RESET SEGRETO (3 VOLTE ESC) ---
+    // --- RESET SEGRETO ---
     let escCount = 0;
     window.addEventListener('keydown', (e) => {
         if (e.key === "Escape") {
@@ -306,11 +315,9 @@ function checkSecurity(email) {
     async function showAdminDashboard() {
         const content = document.getElementById('appContent');
         content.innerHTML = `<h1>PANNELLO RECLUTAMENTO LSPD</h1><div id="adminList">Caricamento database...</div>`;
-
         try {
             const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
             let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
-
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 'var(--police-accent)');
@@ -357,10 +364,21 @@ function checkSecurity(email) {
 
     function confirmAction(id, status) {
         const color = status === 'ACCETTATA' ? 'var(--success)' : 'var(--danger)';
+        let additionalInput = "";
+        
+        if (status === 'RIFIUTATA') {
+            additionalInput = `
+                <div style="margin-top:20px; text-align:left;">
+                    <label style="color:var(--danger); font-size:0.7rem;">MOTIVAZIONE RIFIUTO (OBBLIGATORIA)</label>
+                    <textarea id="refusalReason" placeholder="Es: Fedina penale sporca / Motivazioni insufficienti..." style="margin-top:5px; border-color:var(--danger);"></textarea>
+                </div>`;
+        }
+
         document.getElementById('modalResult').innerHTML = `
             <div style="padding:20px;">
                 <h2 style="font-family:'Orbitron'; color:${color};">RICHIESTA AUTORIZZAZIONE</h2>
                 <p>Impostare lo stato su <strong style="color:${color}">${status}</strong>?</p>
+                ${additionalInput}
                 <div style="display:flex; gap:10px; margin-top:30px;">
                     <button onclick="closeModal()" style="background:#333; border:none;">ANNULLA</button>
                     <button onclick="processUpdate('${id}', '${status}')" style="background:${color}; border:none; color:${status === 'ACCETTATA' ? '#000' : '#fff'}">CONFERMA</button>
@@ -370,8 +388,19 @@ function checkSecurity(email) {
     }
 
     async function processUpdate(id, status) {
+        let updateData = { stato: status };
+        
+        if (status === 'RIFIUTATA') {
+            const reason = document.getElementById('refusalReason').value;
+            if (!reason) {
+                alert("Inserisci una motivazione per il rifiuto!");
+                return;
+            }
+            updateData.notaRifiuto = reason;
+        }
+
         try {
-            await db.collection("candidature").doc(id).update({ stato: status });
+            await db.collection("candidature").doc(id).update(updateData);
             closeModal();
             showNotice(`Aggiornato: ${status}`, "success");
             showAdminDashboard();
@@ -394,6 +423,33 @@ function checkSecurity(email) {
             tag.style.borderColor = statusColor;
             tag.style.color = statusColor;
 
+            let messageHtml = "";
+            if (data.stato === 'ACCETTATA') {
+                messageHtml = `
+<p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
+                        <p>1. Recati in centrale e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
+                        <p>2. Dovrai svolgere il percorso di <strong>Accademia</strong> per essere integrato nel dipartimento.</p>
+                        <p>3. Entra nel nostro database ufficiale (Discord) per completare la registrazione:</p>
+                        <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>
+                    </div>`;
+            } else if (data.stato === 'RIFIUTATA') {
+                messageHtml = `
+                    <div class="status-msg" style="border-left: 3px solid var(--danger);">
+                        <p>❌ <strong>CANDIDATURA RESPINTA</strong></p>
+                        <p>Spiacenti, il Comando LSPD ha deciso di non procedere con il tuo arruolamento.</p>
+                        <p style="margin-top:15px; color:var(--danger); font-family:'Orbitron'; font-size:0.7rem;">MOTIVAZIONE UFFICIALE:</p>
+                        <p style="color:white; font-style:italic;">"${data.notaRifiuto || 'Nessuna motivazione specifica fornita.'}"</p>
+                    </div>`;
+            } else {
+                messageHtml = `
+                    <div class="status-msg">
+                        <p>⏳ <strong>FASCICOLO IN REVISIONE</strong></p>
+                        <p>I tuoi dati sono stati trasmessi con successo al Dipartimento di Polizia di Los Santos.</p>
+                        <p>Attualmente i Reclutatori stanno analizzando la tua fedina penale e le tue motivazioni.</p>
+                        <p>Monitora regolarmente questo portale per aggiornamenti.</p>
+                    </div>`;
+            }
+
             content.innerHTML = `
                 <h1>STATO PRATICA: #${data.protocollo}</h1>
                 <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 30px; margin-top: 30px; text-align: center;">
@@ -402,9 +458,7 @@ function checkSecurity(email) {
                         <p>Cittadino: <strong style="color:white;">${data.nomeIC}</strong></p>
                         <p>Protocollo: <strong style="color:white;">#${data.protocollo}</strong></p>
                         <hr style="border-color: rgba(0,85,255,0.1); margin: 20px 0;">
-                        <p style="color: #aaa; font-style: italic;">
-                            ${data.stato === 'ACCETTATA' ? 'Candidatura accettata. Presentati in centrale, presentando il codice pratica.' : (data.stato === 'RIFIUTATA' ? 'Spiacenti, la tua candidatura è stata respinta dal Comando.' : 'Fascicolo in attesa di revisione da parte del Comando LSPD.')}
-                        </p>
+                        ${messageHtml}
                     </div>
                 </div>`;
         } else {
@@ -529,40 +583,30 @@ function checkSecurity(email) {
             .catch(() => showNotice("Credenziali errate", "error"));
     });
 
-document.getElementById('registerForm').addEventListener('submit', e => {
-    e.preventDefault();
-    
-    // CONTROLLO PREVENTIVO: Il dispositivo ha già un account?
-    const locked = localStorage.getItem('lspd_registered_email');
-    if (locked) {
-        showNotice("ERRORE: Dispositivo già associato a un account.", "error");
-        return; // Interrompe la creazione dell'account
-    }
-
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    
-    auth.createUserWithEmailAndPassword(email, password)
-        .then(() => { 
-            // Salva immediatamente l'email per bloccare futuri tentativi
-            localStorage.setItem('lspd_registered_email', email); 
-            showNotice("Account creato con successo", "success"); 
-        })
-        .catch(err => {
-            if(err.code === "auth/email-already-in-use") {
-                showNotice("Email già registrata nel database.", "error");
-            } else {
-                showNotice("Errore: " + err.message, "error");
-            }
-        });
-});
+    document.getElementById('registerForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const locked = localStorage.getItem('lspd_registered_email');
+        if (locked) {
+            showNotice("ERRORE: Dispositivo già associato a un account.", "error");
+            return;
+        }
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        auth.createUserWithEmailAndPassword(email, password)
+            .then(() => { 
+                localStorage.setItem('lspd_registered_email', email); 
+                showNotice("Account creato con successo", "success"); 
+            })
+            .catch(err => {
+                if(err.code === "auth/email-already-in-use") {
+                    showNotice("Email già registrata nel database.", "error");
+                } else {
+                    showNotice("Errore: " + err.message, "error");
+                }
+            });
+    });
 
     function logout() { auth.signOut().then(() => window.location.reload()); }
 </script>
 </body>
 </html>
-
-
-
-
-
