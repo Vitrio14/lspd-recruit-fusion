@@ -161,6 +161,42 @@
             border-radius: 3px;
         }
         .status-msg { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; line-height: 1.5; }
+
+        .declaration-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 68, 68, 0.05);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-left: 4px solid var(--danger);
+}
+
+.declaration-text {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #ccc;
+    margin-bottom: 12px;
+}
+
+.declaration-text strong {
+    color: var(--danger);
+    text-transform: uppercase;
+}
+
+.checkbox-custom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-family: 'Orbitron';
+    font-size: 0.7rem;
+    color: var(--police-accent);
+}
+
+.checkbox-custom input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -509,36 +545,59 @@
                 </div>
                 <div class="form-group"><label>Esperienze Pregresse</label><textarea id="esperienze" rows="2" required></textarea></div>
                 <div class="form-group"><label>Descrizione / Motivazione</label><textarea id="motivazione" rows="3" required></textarea></div>
+                <div class="declaration-container">
+    <p class="declaration-text">
+        <strong>Dichiarazione di Responsabilità:</strong><br>
+        Il sottoscritto dichiara che tutte le informazioni fornite in questo fascicolo corrispondono al vero. 
+        Si è consapevoli che dichiarazioni mendaci o falsificazione di documenti comporteranno l'immediata 
+        esclusione dal dipartimento e potranno essere <strong>perseguite penalmente</strong> secondo il codice vigente.
+    </p>
+    <label class="checkbox-custom">
+        <input type="checkbox" id="accettoResponsabilita" required>
+        ACCETTO E CONFERMO LA VERIDICITÀ DEI DATI
+    </label>
+</div>
                 <button type="submit" id="btnInvia">TRASMETTI AL DIPARTIMENTO</button>
             </form>`;
         document.getElementById('candidaturaForm').addEventListener('submit', handleFormSubmit);
     }
 
-    async function handleFormSubmit(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnInvia');
-        btn.disabled = true; btn.innerText = "TRASMISSIONE IN CORSO...";
-        
-        const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(el => el.value).join(", ");
-        const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
-        
-        const formData = {
-            protocollo: registroID, 
-            nomeReale: document.getElementById('nomeReale').value, 
-            etaReale: document.getElementById('etaReale').value,
-            discordID: document.getElementById('discordID').value, 
-            nomeIC: document.getElementById('nomeIC').value,
-            dataNascita: document.getElementById('dataNascita').value, 
-            telefono: document.getElementById('telefono').value,
-            portoArmi: document.getElementById('portoArmi').value, 
-            patenti: patenti || "Nessuna",
-            fedina: document.getElementById('fedina').value, 
-            esperienze: document.getElementById('esperienze').value,
-            motivazione: document.getElementById('motivazione').value, 
-            dataInvio: new Date().toLocaleString(),
-            email: auth.currentUser.email, 
-            stato: 'IN REVISIONE'
-        };
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    // 1. Controllo obbligatorio della spunta di responsabilità
+    const checkboxResponsabilita = document.getElementById('accettoResponsabilita');
+    if (!checkboxResponsabilita.checked) {
+        showNotice("ERRORE: Devi accettare la dichiarazione di responsabilità!", "error");
+        return; // Blocca l'invio
+    }
+
+    const btn = document.getElementById('btnInvia');
+    btn.disabled = true; 
+    btn.innerText = "TRASMISSIONE IN CORSO...";
+    
+    const patenti = Array.from(document.querySelectorAll('input[name="patente"]:checked')).map(el => el.value).join(", ");
+    const registroID = "LSPD-" + Math.floor(1000 + Math.random() * 9000);
+    
+    const formData = {
+        protocollo: registroID, 
+        nomeReale: document.getElementById('nomeReale').value, 
+        etaReale: document.getElementById('etaReale').value,
+        discordID: document.getElementById('discordID').value, 
+        nomeIC: document.getElementById('nomeIC').value,
+        dataNascita: document.getElementById('dataNascita').value, 
+        telefono: document.getElementById('telefono').value,
+        portoArmi: document.getElementById('portoArmi').value, 
+        patenti: patenti || "Nessuna",
+        fedina: document.getElementById('fedina').value, 
+        esperienze: document.getElementById('esperienze').value,
+        motivazione: document.getElementById('motivazione').value, 
+        // 2. Salvataggio della conferma nel database
+        dichiarazioneVeridicita: "ACCETTATA",
+        dataInvio: new Date().toLocaleString(),
+        email: auth.currentUser.email, 
+        stato: 'IN REVISIONE'
+    };
 
         try {
             await db.collection("candidature").doc(auth.currentUser.uid).set(formData);
@@ -557,7 +616,8 @@
                             { name: "📋 INFO IC", value: `**Nome:** ${formData.nomeIC}\n**Nascita:** ${formData.dataNascita}\n**Tel:** ${formData.telefono}`, inline: true },
                             { name: "🛡️ STATO LEGALE", value: `**Porto d'armi:** ${formData.portoArmi}\n**Fedina:** ${formData.fedina}\n**Patenti:** ${formData.patenti}`, inline: false },
                             { name: "💼 ESPERIENZE", value: formData.esperienze, inline: false },
-                            { name: "🎯 MOTIVAZIONE", value: formData.motivazione, inline: false }
+                            { name: "🎯 MOTIVAZIONE", value: formData.motivazione, inline: false },
+                            { name: "⚖️ RESPONSABILITÀ", value: "✅ Veridicità Dichiarata", inline: true }
                         ], 
                         footer: { text: `LSPD Portal | ${formData.dataInvio}` }
                     }]
@@ -610,3 +670,4 @@
 </script>
 </body>
 </html>
+
