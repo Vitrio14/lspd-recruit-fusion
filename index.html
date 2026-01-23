@@ -428,17 +428,14 @@ function confirmAction(id, status) {
 async function processUpdate(id, status) {
     let updateData = { stato: status };
     
-    // CORREZIONE: Salviamo la nota sia per il rifiuto che per le modifiche
+    // CORREZIONE: Ora legge la nota sia per RIFIUTATA che per RICHIESTE MODIFICHE
     if (status === 'RIFIUTATA' || status === 'RICHIESTE MODIFICHE') {
-        const reasonField = document.getElementById('refusalReason');
-        if (reasonField) {
-            const reason = reasonField.value;
-            if (!reason) {
-                alert("Inserisci una nota obbligatoria per spiegare al cittadino cosa fare!");
-                return;
-            }
-            updateData.notaRifiuto = reason;
+        const reason = document.getElementById('refusalReason').value;
+        if (!reason) {
+            alert("Per favore, inserisci una nota per spiegare al cittadino cosa deve fare o perché è stato rifiutato.");
+            return;
         }
+        updateData.notaRifiuto = reason;
     }
 
     try {
@@ -523,7 +520,7 @@ else if (data.stato === 'RICHIESTE MODIFICHE') {
     messageHtml = `
         <div class="status-msg" style="border-left: 3px solid #ff8800;">
             <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
-            <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo prima di procedere.</p>
+            <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo.</p>
             <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
             <p style="color:white; font-style:italic; margin-bottom:20px;">
                 "${data.notaRifiuto ? data.notaRifiuto : 'Nessuna nota specifica fornita.'}"
@@ -724,5 +721,6 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
+
 
 
