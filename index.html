@@ -384,15 +384,15 @@
             <h2 style="font-family:'Orbitron'; color:var(--police-accent); border-bottom:1px solid blue; padding-bottom:10px;">DETTAGLI #${data.protocollo}</h2>
             <div class="detail-grid">
                 <div class="detail-item"><span class="detail-label">Nome Reale</span>${data.nomeReale}</div>
-                <div class="detail-item"><span class="detail-label">Età</span>${data.etaReale}</div>
+                <div class="detail-item"><span class="detail-label">Età reale</span>${data.etaReale}</div>
                 <div class="detail-item"><span class="detail-label">Discord ID</span>${data.discordID}</div>
-                <div class="detail-item"><span class="detail-label">Telefono</span>${data.telefono}</div>
-                <div class="detail-item"><span class="detail-label">Data Nascita</span>${data.dataNascita}</div>
-                <div class="detail-item"><span class="detail-label">Porto d'Armi</span>${data.portoArmi}</div>
-                <div class="detail-item full"><span class="detail-label">Patenti</span>${data.patenti}</div>
-                <div class="detail-item full"><span class="detail-label">Fedina Penale</span>${data.fedina}</div>
-                <div class="detail-item full"><span class="detail-label">Esperienze</span>${data.esperienze}</div>
-                <div class="detail-item full"><span class="detail-label">Motivazione</span>${data.motivazione}</div>
+                <div class="detail-item"><span class="detail-label">Telefono (IC)</span>${data.telefono}</div>
+                <div class="detail-item"><span class="detail-label">Data Nascita (IC)</span>${data.dataNascita}</div>
+                <div class="detail-item"><span class="detail-label">Porto d'Armi (IC)</span>${data.portoArmi}</div>
+                <div class="detail-item full"><span class="detail-label">Patenti (IC)</span>${data.patenti}</div>
+                <div class="detail-item full"><span class="detail-label">Fedina Penale (IC)</span>${data.fedina}</div>
+                <div class="detail-item full"><span class="detail-label">Esperienze (IC)</span>${data.esperienze}</div>
+                <div class="detail-item full"><span class="detail-label">Motivazione (IC)</span>${data.motivazione}</div>
             </div>
             <button onclick="closeModal()" style="margin-top:20px; padding:10px;">CHIUDI SCHEDA</button>`;
         document.getElementById('modalOverlay').style.display = 'flex';
@@ -670,5 +670,6 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
+
 
 
