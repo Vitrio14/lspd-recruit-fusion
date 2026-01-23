@@ -425,25 +425,28 @@ function confirmAction(id, status) {
         document.getElementById('modalOverlay').style.display = 'flex';
     }
 
-    async function processUpdate(id, status) {
-        let updateData = { stato: status };
-        
-        if (status === 'RIFIUTATA') {
-            const reason = document.getElementById('refusalReason').value;
-            if (!reason) {
-                alert("Inserisci una motivazione per il rifiuto!");
-                return;
-            }
-            updateData.notaRifiuto = reason;
+async function processUpdate(id, status) {
+    let updateData = { stato: status };
+    
+    // Aggiungi la nota se lo stato è RIFIUTATA oppure RICHIESTE MODIFICHE
+    if (status === 'RIFIUTATA' || status === 'RICHIESTE MODIFICHE') {
+        const reason = document.getElementById('refusalReason').value;
+        if (!reason) {
+            alert("Inserisci una nota o motivazione!");
+            return;
         }
-
-        try {
-            await db.collection("candidature").doc(id).update(updateData);
-            closeModal();
-            showNotice(`Aggiornato: ${status}`, "success");
-            showAdminDashboard();
-        } catch (e) { showNotice("Errore database", "error"); }
+        updateData.notaRifiuto = reason;
     }
+
+    try {
+        await db.collection("candidature").doc(id).update(updateData);
+        closeModal();
+        showNotice(`Aggiornato: ${status}`, "success");
+        showAdminDashboard();
+    } catch (e) { 
+        showNotice("Errore database", "error"); 
+    }
+}
 
     function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
@@ -512,17 +515,19 @@ async function checkUserApplication(uid) {
                         <p style="margin-top:15px; color:var(--danger); font-family:'Orbitron'; font-size:0.7rem;">MOTIVAZIONE UFFICIALE:</p>
                         <p style="color:white; font-style:italic;">"${data.notaRifiuto || 'Nessuna motivazione specifica fornita.'}"</p>
                     </div>`;
-            } else if (data.stato === 'RICHIESTE MODIFICHE') {
-                // Nuova condizione per permettere la modifica all'utente
-                messageHtml = `
-                    <div class="status-msg" style="border-left: 3px solid #ff8800;">
-                        <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
-                        <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo prima di procedere.</p>
-                        <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
-                        <p style="color:white; font-style:italic; margin-bottom:20px;">"${data.notaRifiuto || 'Vedi i dettagli sopra.'}"</p>
-                        <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
-                    </div>`;
-            } else {
+            } // Cerca questa sezione nel tuo script (intorno alla riga 380)
+else if (data.stato === 'RICHIESTE MODIFICHE') {
+    messageHtml = `
+        <div class="status-msg" style="border-left: 3px solid #ff8800;">
+            <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
+            <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo prima di procedere.</p>
+            <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
+            <p style="color:white; font-style:italic; margin-bottom:20px;">
+                "${data.notaRifiuto ? data.notaRifiuto : 'Nessuna nota specifica fornita.'}"
+            </p>
+            <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
+        </div>`;
+} else {
                 messageHtml = `
                     <div class="status-msg">
                         <p>⏳ <strong>FASCICOLO IN REVISIONE</strong></p>
@@ -716,3 +721,4 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
+
