@@ -428,14 +428,17 @@ function confirmAction(id, status) {
 async function processUpdate(id, status) {
     let updateData = { stato: status };
     
-    // Aggiungi la nota se lo stato è RIFIUTATA oppure RICHIESTE MODIFICHE
+    // CORREZIONE: Salviamo la nota sia per il rifiuto che per le modifiche
     if (status === 'RIFIUTATA' || status === 'RICHIESTE MODIFICHE') {
-        const reason = document.getElementById('refusalReason').value;
-        if (!reason) {
-            alert("Inserisci una nota o motivazione!");
-            return;
+        const reasonField = document.getElementById('refusalReason');
+        if (reasonField) {
+            const reason = reasonField.value;
+            if (!reason) {
+                alert("Inserisci una nota obbligatoria per spiegare al cittadino cosa fare!");
+                return;
+            }
+            updateData.notaRifiuto = reason;
         }
-        updateData.notaRifiuto = reason;
     }
 
     try {
@@ -721,4 +724,5 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
+
 
