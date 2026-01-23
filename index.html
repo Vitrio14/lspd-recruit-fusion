@@ -113,7 +113,7 @@
         .admin-table td { padding: 12px; border-bottom: 1px solid rgba(0, 85, 255, 0.1); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         .action-cell { display: flex; gap: 5px; }
-        .btn-small { padding: 5px 8px; font-size: 0.6rem; width: auto; margin: 0; }
+        .btn-small { padding: 3px 6px; font-size: 0.55rem; width: auto; margin: 0; }
         .btn-info { background: var(--police-blue); }
         .btn-success { background: var(--success); color: #000; }
         .btn-danger { background: var(--danger); }
@@ -356,18 +356,19 @@
             let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 'var(--police-accent)');
-                html += `
-                    <tr>
-                        <td>#${data.protocollo}</td>
-                        <td>${data.nomeIC}</td>
-                        <td style="color:${color}; font-weight:bold;">${data.stato}</td>
-                        <td class="action-cell">
-                            <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
-                            <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
-                            <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
-                        </td>
-                    </tr>`;
+                const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : 'var(--police-accent)'));
+html += `
+    <tr>
+        <td>#${data.protocollo}</td>
+        <td>${data.nomeIC}</td>
+        <td style="color:${color}; font-weight:bold;">${data.stato}</td>
+        <td class="action-cell">
+            <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
+            <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
+            <button onclick="confirmAction('${doc.id}', 'RICHIESTE MODIFICHE')" class="btn-small" style="background:#ff8800; color:black;">MOD</button>
+            <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
+        </td>
+    </tr>`;
             });
             html += `</tbody></table>`;
             document.getElementById('adminList').innerHTML = html;
@@ -398,17 +399,18 @@
         document.getElementById('modalOverlay').style.display = 'flex';
     }
 
-    function confirmAction(id, status) {
-        const color = status === 'ACCETTATA' ? 'var(--success)' : 'var(--danger)';
-        let additionalInput = "";
-        
-        if (status === 'RIFIUTATA') {
-            additionalInput = `
-                <div style="margin-top:20px; text-align:left;">
-                    <label style="color:var(--danger); font-size:0.7rem;">MOTIVAZIONE RIFIUTO (OBBLIGATORIA)</label>
-                    <textarea id="refusalReason" placeholder="Es: Fedina penale sporca / Motivazioni insufficienti..." style="margin-top:5px; border-color:var(--danger);"></textarea>
-                </div>`;
-        }
+function confirmAction(id, status) {
+    const color = status === 'ACCETTATA' ? 'var(--success)' : (status === 'RIFIUTATA' ? 'var(--danger)' : '#ff8800');
+    let additionalInput = "";
+    
+    if (status === 'RIFIUTATA' || status === 'RICHIESTE MODIFICHE') {
+        const label = status === 'RIFIUTATA' ? 'MOTIVAZIONE RIFIUTO' : 'COSA DEVE MODIFICARE?';
+        additionalInput = `
+            <div style="margin-top:20px; text-align:left;">
+                <label style="color:${color}; font-size:0.7rem;">${label} (OBBLIGATORIO)</label>
+                <textarea id="refusalReason" placeholder="Scrivi qui..." style="margin-top:5px; border-color:${color};"></textarea>
+            </div>`;
+    }
 
         document.getElementById('modalResult').innerHTML = `
             <div style="padding:20px;">
@@ -445,15 +447,50 @@
 
     function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
-    // --- DASHBOARD UTENTE ---
-    async function checkUserApplication(uid) {
+    async function editApplication(uid) {
+    const doc = await db.collection("candidature").doc(uid).get();
+    const data = doc.data();
+    
+    // Renderizziamo il form vuoto
+    renderCandidaturaForm();
+    
+    // Popoliamo il form con i dati esistenti
+    setTimeout(() => {
+        document.getElementById('nomeReale').value = data.nomeReale;
+        document.getElementById('etaReale').value = data.etaReale;
+        document.getElementById('discordID').value = data.discordID;
+        document.getElementById('nomeIC').value = data.nomeIC;
+        document.getElementById('dataNascita').value = data.dataNascita;
+        document.getElementById('telefono').value = data.telefono;
+        document.getElementById('portoArmi').value = data.portoArmi;
+        document.getElementById('fedina').value = data.fedina;
+        document.getElementById('esperienze').value = data.esperienze;
+        document.getElementById('motivazione').value = data.motivazione;
+        
+        // Gestione patenti
+        const patentiSalvate = data.patenti.split(", ");
+        document.querySelectorAll('input[name="patente"]').forEach(checkbox => {
+            if(patentiSalvate.includes(checkbox.value)) checkbox.checked = true;
+        });
+
+        // Cambiamo il testo del bottone
+        const btn = document.getElementById('btnInvia');
+        btn.innerText = "AGGIORNA E RE-INVIA PRATICA";
+        
+        // Scorri in alto
+        window.scrollTo(0, 0);
+    }, 100);
+}
+
+async function checkUserApplication(uid) {
         const doc = await db.collection("candidature").doc(uid).get();
         const content = document.getElementById('appContent');
         const tag = document.getElementById('mainStatusTag');
         
         if (doc.exists) {
             const data = doc.data();
-            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : '#ffd700');
+            // Aggiornato per includere l'arancione per le modifiche
+            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : '#ffd700'));
             
             tag.innerText = data.stato;
             tag.style.borderColor = statusColor;
@@ -462,12 +499,11 @@
             let messageHtml = "";
             if (data.stato === 'ACCETTATA') {
                 messageHtml = `
-<p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
+                        <p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
                         <p>1. Recati in centrale e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
                         <p>2. Dovrai svolgere il percorso di <strong>Accademia</strong> per essere integrato nel dipartimento.</p>
                         <p>3. Entra nel nostro database ufficiale (Discord) per completare la registrazione:</p>
-                        <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>
-                    </div>`;
+                        <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>`;
             } else if (data.stato === 'RIFIUTATA') {
                 messageHtml = `
                     <div class="status-msg" style="border-left: 3px solid var(--danger);">
@@ -475,6 +511,16 @@
                         <p>Spiacenti, il Comando LSPD ha deciso di non procedere con il tuo arruolamento.</p>
                         <p style="margin-top:15px; color:var(--danger); font-family:'Orbitron'; font-size:0.7rem;">MOTIVAZIONE UFFICIALE:</p>
                         <p style="color:white; font-style:italic;">"${data.notaRifiuto || 'Nessuna motivazione specifica fornita.'}"</p>
+                    </div>`;
+            } else if (data.stato === 'RICHIESTE MODIFICHE') {
+                // Nuova condizione per permettere la modifica all'utente
+                messageHtml = `
+                    <div class="status-msg" style="border-left: 3px solid #ff8800;">
+                        <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
+                        <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo prima di procedere.</p>
+                        <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
+                        <p style="color:white; font-style:italic; margin-bottom:20px;">"${data.notaRifiuto || 'Vedi i dettagli sopra.'}"</p>
+                        <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
                     </div>`;
             } else {
                 messageHtml = `
@@ -670,7 +716,3 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
-
-
-
-
