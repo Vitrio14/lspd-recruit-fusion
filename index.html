@@ -542,7 +542,7 @@ async function checkUserApplication(uid) {
         if (data.stato === 'ACCETTATA') {
             messageHtml = `
                     <p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
-                    <p>1. Recati in centrale e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
+                    <p>1. Recati in centrale dopo la pubblicazione dell'avviso di chiusura reclutamenti su discord che conterrà la lista degli idonei e non idonei con l'orario e la data di convocazione e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
                     <p>2. Dovrai svolgere il percorso di <strong>Accademia</strong> per essere integrato nel dipartimento.</p>
                     <p>3. Entra nel nostro database ufficiale (Discord) per completare la registrazione:</p>
                     <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>`;
@@ -811,3 +811,4 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
+
