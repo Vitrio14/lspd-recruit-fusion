@@ -262,6 +262,7 @@
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1458988900172435620/OBrKfj85FDnrvS3mH4RQGi0VWXMQ2B-Db-6-_Ly3xeBsQmF8ij0CP2KB5kCNhyG-Qzr8";
     const ROLE_TAGS = "<@&1433091874435895377> <@&1433091724384665814> <@&1458992367762673837>";
     const DISCORD_INVITE = "https://discord.gg/nDWsPqp4NX";
+    const STATUS_DOC_ID = "portal_settings"; // ID del documento per le impostazioni
 
     const firebaseConfig = {
         apiKey: "AIzaSyDfIW4GjBZ4QGPvfJtzLAr34VxDRLzcU6M",
@@ -347,35 +348,73 @@
         }
     });
 
-    // --- DASHBOARD ADMIN ---
-    async function showAdminDashboard() {
-        const content = document.getElementById('appContent');
-        content.innerHTML = `<h1>PANNELLO RECLUTAMENTO LSPD</h1><div id="adminList">Caricamento database...</div>`;
-        try {
-            const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
-            let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : 'var(--police-accent)'));
-html += `
-    <tr>
-        <td>#${data.protocollo}</td>
-        <td>${data.nomeIC}</td>
-        <td style="color:${color}; font-weight:bold;">${data.stato}</td>
-        <td class="action-cell">
-            <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
-            <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
-            <button onclick="confirmAction('${doc.id}', 'RICHIESTE MODIFICHE')" class="btn-small" style="background:#ff8800; color:black;">MOD</button>
-            <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
-        </td>
-    </tr>`;
-            });
-            html += `</tbody></table>`;
-            document.getElementById('adminList').innerHTML = html;
-        } catch (e) {
-            document.getElementById('adminList').innerHTML = "Errore nel caricamento del database.";
-        }
+async function showAdminDashboard() {
+    const content = document.getElementById('appContent');
+    
+    // Recupera lo stato attuale dei bandi
+    const settings = await db.collection("config").doc(STATUS_DOC_ID).get();
+    const isOpen = settings.exists ? settings.data().bandiAperti : true;
+    
+    content.innerHTML = `
+        <h1>PANNELLO RECLUTAMENTO LSPD</h1>
+        
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border: 1px solid var(--police-blue); margin-bottom: 30px; text-align: center;">
+            <p style="font-family: 'Orbitron'; color: var(--police-accent);">STATO ATTUALE BANDI: 
+                <span style="color: ${isOpen ? 'var(--success)' : 'var(--danger)'}">${isOpen ? 'APERTI' : 'CHIUSI'}</span>
+            </p>
+            <button onclick="toggleBandi(${isOpen})" style="width: auto; padding: 10px 20px; background: ${isOpen ? 'var(--danger)' : 'var(--success)'}; color: ${isOpen ? 'white' : 'black'}">
+                ${isOpen ? 'CHIUDI RECLUTAMENTI' : 'APRI RECLUTAMENTI'}
+            </button>
+        </div>
+
+        <div id="adminList">Caricamento database...</div>`;
+
+    // ... (restante codice della tabella per caricare le candidature)
+    loadAdminTable(); 
+}
+
+// Nuova funzione per gestire il toggle
+async function toggleBandi(currentStatus) {
+    try {
+        await db.collection("config").doc(STATUS_DOC_ID).set({
+            bandiAperti: !currentStatus,
+            ultimoAggiornamento: new Date().toLocaleString(),
+            aggiornatoDa: auth.currentUser.email
+        });
+        showNotice("Stato bandi aggiornato!", "success");
+        showAdminDashboard();
+    } catch (e) {
+        showNotice("Errore nel cambio stato", "error");
     }
+}
+
+// Sposta il caricamento della tabella in una funzione separata
+async function loadAdminTable() {
+    try {
+        const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
+        let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : 'var(--police-accent)'));
+            html += `
+                <tr>
+                    <td>#${data.protocollo}</td>
+                    <td>${data.nomeIC}</td>
+                    <td style="color:${color}; font-weight:bold;">${data.stato}</td>
+                    <td class="action-cell">
+                        <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
+                        <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
+                        <button onclick="confirmAction('${doc.id}', 'RICHIESTE MODIFICHE')" class="btn-small" style="background:#ff8800; color:black;">MOD</button>
+                        <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
+                    </td>
+                </tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('adminList').innerHTML = html;
+    } catch (e) {
+        document.getElementById('adminList').innerHTML = "Errore caricamento dati.";
+    }
+}
 
     async function viewDetails(id) {
         const doc = await db.collection("candidature").doc(id).get();
@@ -486,75 +525,126 @@ async function processUpdate(id, status) {
 }
 
 async function checkUserApplication(uid) {
-        const doc = await db.collection("candidature").doc(uid).get();
-        const content = document.getElementById('appContent');
-        const tag = document.getElementById('mainStatusTag');
+    const doc = await db.collection("candidature").doc(uid).get();
+    const content = document.getElementById('appContent');
+    const tag = document.getElementById('mainStatusTag');
+    
+    if (doc.exists) {
+        const data = doc.data();
+        // Aggiornato per includere l'arancione per le modifiche
+        const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : '#ffd700'));
         
-        if (doc.exists) {
-            const data = doc.data();
-            // Aggiornato per includere l'arancione per le modifiche
-            const statusColor = data.stato === 'ACCETTATA' ? '#00ff88' : (data.stato === 'RIFIUTATA' ? '#ff4444' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : '#ffd700'));
-            
-            tag.innerText = data.stato;
-            tag.style.borderColor = statusColor;
-            tag.style.color = statusColor;
+        tag.innerText = data.stato;
+        tag.style.borderColor = statusColor;
+        tag.style.color = statusColor;
 
-            let messageHtml = "";
-            if (data.stato === 'ACCETTATA') {
-                messageHtml = `
-                        <p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
-                        <p>1. Recati in centrale e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
-                        <p>2. Dovrai svolgere il percorso di <strong>Accademia</strong> per essere integrato nel dipartimento.</p>
-                        <p>3. Entra nel nostro database ufficiale (Discord) per completare la registrazione:</p>
-                        <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>`;
-            } else if (data.stato === 'RIFIUTATA') {
-                messageHtml = `
-                    <div class="status-msg" style="border-left: 3px solid var(--danger);">
-                        <p>❌ <strong>CANDIDATURA RESPINTA</strong></p>
-                        <p>Spiacenti, il Comando LSPD ha deciso di non procedere con il tuo arruolamento.</p>
-                        <p style="margin-top:15px; color:var(--danger); font-family:'Orbitron'; font-size:0.7rem;">MOTIVAZIONE UFFICIALE:</p>
-                        <p style="color:white; font-style:italic;">"${data.notaRifiuto || 'Nessuna motivazione specifica fornita.'}"</p>
-                    </div>`;
-            } // Cerca questa sezione nel tuo script (intorno alla riga 380)
-else if (data.stato === 'RICHIESTE MODIFICHE') {
-    messageHtml = `
-        <div class="status-msg" style="border-left: 3px solid #ff8800;">
-            <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
-            <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo.</p>
-            <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
-            <p style="color:white; font-style:italic; margin-bottom:20px;">
-                "${data.notaRifiuto ? data.notaRifiuto : 'Nessuna nota specifica fornita.'}"
-            </p>
-            <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
-        </div>`;
-} else {
-                messageHtml = `
-                    <div class="status-msg">
-                        <p>⏳ <strong>FASCICOLO IN REVISIONE</strong></p>
-                        <p>I tuoi dati sono stati trasmessi con successo al Dipartimento di Polizia di Los Santos.</p>
-                        <p>Attualmente i Reclutatori stanno analizzando la tua fedina penale e le tue motivazioni.</p>
-                        <p>Monitora regolarmente questo portale per aggiornamenti.</p>
-                    </div>`;
-            }
-
-            content.innerHTML = `
-                <h1>STATO PRATICA: #${data.protocollo}</h1>
-                <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 30px; margin-top: 30px; text-align: center;">
-                    <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.8rem; margin: 0;">${data.stato}</p>
-                    <div style="margin: 20px 0; text-align: left; font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                        <p>Cittadino: <strong style="color:white;">${data.nomeIC}</strong></p>
-                        <p>Protocollo: <strong style="color:white;">#${data.protocollo}</strong></p>
-                        <hr style="border-color: rgba(0,85,255,0.1); margin: 20px 0;">
-                        ${messageHtml}
-                    </div>
+        let messageHtml = "";
+        if (data.stato === 'ACCETTATA') {
+            messageHtml = `
+                    <p>✅ <strong>CONGRATULAZIONI!</strong> La tua candidatura è stata accettata dal Comando.</p>
+                    <p>1. Recati in centrale e chiedi di un <strong>Reclutatore</strong>. È fondamentale comunicare il tuo codice pratica: <strong style="color:var(--police-accent); font-size:1.2rem;">#${data.protocollo}</strong>.</p>
+                    <p>2. Dovrai svolgere il percorso di <strong>Accademia</strong> per essere integrato nel dipartimento.</p>
+                    <p>3. Entra nel nostro database ufficiale (Discord) per completare la registrazione:</p>
+                    <a href="${DISCORD_INVITE}" target="_blank" class="discord-btn">ENTRA NEL DISCORD LSPD</a>`;
+        } else if (data.stato === 'RIFIUTATA') {
+            messageHtml = `
+                <div class="status-msg" style="border-left: 3px solid var(--danger);">
+                    <p>❌ <strong>CANDIDATURA RESPINTA</strong></p>
+                    <p>Spiacenti, il Comando LSPD ha deciso di non procedere con il tuo arruolamento.</p>
+                    <p style="margin-top:15px; color:var(--danger); font-family:'Orbitron'; font-size:0.7rem;">MOTIVAZIONE UFFICIALE:</p>
+                    <p style="color:white; font-style:italic;">"${data.notaRifiuto || 'Nessuna motivazione specifica fornita.'}"</p>
+                </div>`;
+        } else if (data.stato === 'RICHIESTE MODIFICHE') {
+            messageHtml = `
+                <div class="status-msg" style="border-left: 3px solid #ff8800;">
+                    <p>⚠️ <strong>MODIFICHE RICHIESTE</strong></p>
+                    <p>Il reclutatore ha richiesto delle correzioni al tuo fascicolo.</p>
+                    <p style="margin-top:15px; color:#ff8800; font-family:'Orbitron'; font-size:0.7rem;">NOTE DEL RECLUTATORE:</p>
+                    <p style="color:white; font-style:italic; margin-bottom:20px;">
+                        "${data.notaRifiuto ? data.notaRifiuto : 'Nessuna nota specifica fornita.'}"
+                    </p>
+                    <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
                 </div>`;
         } else {
-            tag.innerText = "NUOVA PRATICA";
-            tag.style.borderColor = "var(--police-blue)";
-            tag.style.color = "var(--police-blue)";
+            messageHtml = `
+                <div class="status-msg">
+                    <p>⏳ <strong>FASCICOLO IN REVISIONE</strong></p>
+                    <p>I tuoi dati sono stati trasmessi con successo al Dipartimento di Polizia di Los Santos.</p>
+                    <p>Attualmente i Reclutatori stanno analizzando la tua fedina penale e le tue motivazioni.</p>
+                    <p>Monitora regolarmente questo portale per aggiornamenti.</p>
+                </div>`;
+        }
+
+        content.innerHTML = `
+            <h1>STATO PRATICA: #${data.protocollo}</h1>
+            <div style="background: rgba(0, 85, 255, 0.05); border: 2px solid ${statusColor}; padding: 30px; margin-top: 30px; text-align: center;">
+                <p style="color: ${statusColor}; font-family: 'Orbitron'; font-size: 1.8rem; margin: 0;">${data.stato}</p>
+                <div style="margin: 20px 0; text-align: left; font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <p>Cittadino: <strong style="color:white;">${data.nomeIC}</strong></p>
+                    <p>Protocollo: <strong style="color:white;">#${data.protocollo}</strong></p>
+                    <hr style="border-color: rgba(0,85,255,0.1); margin: 20px 0;">
+                    ${messageHtml}
+                </div>
+            </div>`;
+    } else {
+        // --- NUOVA LOGICA: Controllo se i bandi sono aperti prima di mostrare il modulo ---
+        try {
+            const settings = await db.collection("config").doc(STATUS_DOC_ID).get();
+            const isOpen = settings.exists ? settings.data().bandiAperti : true;
+
+            if (isOpen) {
+                tag.innerText = "NUOVA PRATICA";
+                tag.style.borderColor = "var(--police-blue)";
+                tag.style.color = "var(--police-blue)";
+                renderCandidaturaForm();
+            } else {
+                tag.innerText = "RECLUTAMENTI CHIUSI";
+                tag.style.borderColor = "var(--danger)";
+                tag.style.color = "var(--danger)";
+content.innerHTML = `
+    <div style="max-width: 800px; margin: 50px auto; background: rgba(10, 15, 25, 0.95); border: 2px solid var(--danger); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.03; font-size: 15rem; color: white; pointer-events: none; z-index: 0; font-family: 'Orbitron';">LSPD</div>
+        
+        <div style="padding: 40px; position: relative; z-index: 1;">
+            <div style="text-align: center; border-bottom: 2px solid var(--danger); padding-bottom: 20px; margin-bottom: 30px;">
+                <h2 style="font-family: 'Orbitron'; color: var(--danger); letter-spacing: 5px; margin: 0;">AVVISO ALLA CITTADINANZA</h2>
+                <p style="color: #888; font-size: 0.8rem; margin: 5px 0;">LOS SANTOS POLICE DEPARTMENT - REPARTO RISORSE UMANE</p>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0;">
+                <h1 style="font-family: 'Orbitron'; color: white; font-size: 2rem; border: none; margin-bottom: 20px;">STATO RECLUTAMENTI: <span style="color: var(--danger);">CHIUSI</span></h1>
+                
+                <p style="font-size: 1.1rem; line-height: 1.6; color: #ccc; max-width: 600px; margin: 0 auto;">
+                    Si informa la cittadinanza che le procedure di arruolamento per il ruolo di Cadetto sono attualmente <strong style="color: white;">sospese</strong>. Il portale non accetterà nuovi fascicoli fino a prossima disposizione del Comando Generale.
+                </p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-left: 4px solid var(--police-accent); margin: 30px 0; text-align: left;">
+                <p style="color: var(--police-accent); font-family: 'Orbitron'; font-size: 0.8rem; margin-bottom: 10px;">INFORMAZIONI SULLA RIAPERTURA:</p>
+                <p style="color: #eee; margin: 0;">I nuovi bandi di concorso e le date delle selezioni saranno pubblicati esclusivamente nel canale ufficiale:</p>
+                <p style="color: white; font-weight: bold; margin-top: 10px;">
+                    <i class="fab fa-discord"></i> <span style="text-decoration: underline;">CANALE DISCORD: #comunicati-lspd</span>
+                </p>
+            </div>
+
+            <div style="margin-top: 50px; display: flex; justify-content: flex-end;">
+                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); pt-15px; width: 250px; padding-top: 15px;">
+                    <p style="font-size: 0.6rem; color: #666; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px;">Firmato in originale</p>
+                    <p style="font-family: 'Orbitron'; font-size: 1rem; color: white; margin: 0;">Steven Arex</p>
+                    <p style="font-size: 0.7rem; color: var(--police-accent); font-weight: bold; margin: 0; letter-spacing: 2px;">CAPO DELLA POLIZIA</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 10px; background: repeating-linear-gradient(45deg, var(--danger), var(--danger) 10px, #000 10px, #000 20px);"></div>
+    </div>`;
+            }
+        } catch (e) {
+            // In caso di errore caricamento impostazioni, default sul form
             renderCandidaturaForm();
         }
     }
+}
 
     function renderCandidaturaForm() {
         document.getElementById('appContent').innerHTML = `
@@ -721,6 +811,3 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
-
-
-
