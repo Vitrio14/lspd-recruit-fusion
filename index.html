@@ -110,10 +110,29 @@
 
         .admin-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 20px; }
         .admin-table th { background: rgba(0, 85, 255, 0.1); color: var(--police-accent); font-family: 'Orbitron'; font-size: 0.7rem; padding: 12px; text-align: left; border-bottom: 2px solid var(--police-blue); }
-        .admin-table td { padding: 12px; border-bottom: 1px solid rgba(0, 85, 255, 0.1); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-table td { 
+    padding: 10px 5px; 
+    border-bottom: 1px solid rgba(0, 85, 255, 0.1); 
+    font-size: 0.85rem; 
+    white-space: normal; /* Cambiato da nowrap a normal per evitare l'uscita dai bordi */
+    word-break: break-word;
+}
         
-        .action-cell { display: flex; gap: 5px; }
-        .btn-small { padding: 3px 6px; font-size: 0.55rem; width: auto; margin: 0; }
+       .action-cell { 
+    display: flex; 
+    gap: 3px; 
+    flex-wrap: wrap; /* Se non c'è spazio, i tasti vanno a capo invece di uscire */
+    justify-content: flex-start;
+    min-width: 140px; /* Assicura uno spazio minimo per i tasti */
+}
+        .btn-small { 
+    padding: 4px 5px; 
+    font-size: 0.6rem; 
+    width: auto; 
+    margin: 0; 
+    flex-grow: 1; /* Permette ai tasti di riempire lo spazio armoniosamente */
+    text-align: center;
+}
         .btn-info { background: var(--police-blue); }
         .btn-success { background: var(--success); color: #000; }
         .btn-danger { background: var(--danger); }
@@ -388,29 +407,62 @@ async function toggleBandi(currentStatus) {
     }
 }
 
-// Sposta il caricamento della tabella in una funzione separata
 async function loadAdminTable() {
     try {
         const snapshot = await db.collection("candidature").orderBy("dataInvio", "desc").get();
-        let html = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
+        let activeHtml = `<table class="admin-table"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
+        let archivedHtml = `<table class="admin-table" style="opacity: 0.7;"><thead><tr><th>PROT.</th><th>NOME IC</th><th>STATO</th><th>AZIONI</th></tr></thead><tbody>`;
+        
+        let hasArchived = false;
+
         snapshot.forEach(doc => {
             const data = doc.data();
-            const color = data.stato === 'ACCETTATA' ? 'var(--success)' : (data.stato === 'RIFIUTATA' ? 'var(--danger)' : (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : 'var(--police-accent)'));
-            html += `
+            const isArchived = data.stato === 'ARCHIVIATA';
+            const color = data.stato === 'ACCETTATA' ? 'var(--success)' : 
+                         (data.stato === 'RIFIUTATA' ? 'var(--danger)' : 
+                         (data.stato === 'RICHIESTE MODIFICHE' ? '#ff8800' : 
+                         (isArchived ? '#888' : 'var(--police-accent)')));
+
+            const row = `
                 <tr>
                     <td>#${data.protocollo}</td>
                     <td>${data.nomeIC}</td>
                     <td style="color:${color}; font-weight:bold;">${data.stato}</td>
                     <td class="action-cell">
                         <button onclick="viewDetails('${doc.id}')" class="btn-small btn-info">INFO</button>
-                        <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
-                        <button onclick="confirmAction('${doc.id}', 'RICHIESTE MODIFICHE')" class="btn-small" style="background:#ff8800; color:black;">MOD</button>
-                        <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
+                        ${!isArchived ? `
+                            <button onclick="confirmAction('${doc.id}', 'ACCETTATA')" class="btn-small btn-success">SÌ</button>
+                            <button onclick="confirmAction('${doc.id}', 'RICHIESTE MODIFICHE')" class="btn-small" style="background:#ff8800; color:black;">MOD</button>
+                            <button onclick="confirmAction('${doc.id}', 'RIFIUTATA')" class="btn-small btn-danger">NO</button>
+                            <button onclick="confirmAction('${doc.id}', 'ARCHIVIATA')" class="btn-small" style="background:#555; color:white;">ARCHIVIA</button>
+                        ` : `
+                            <button onclick="confirmAction('${doc.id}', 'IN REVISIONE')" class="btn-small" style="background:var(--police-blue); color:white;">RIPRISTINA</button>
+                        `}
                     </td>
                 </tr>`;
+
+            if (isArchived) {
+                archivedHtml += row;
+                hasArchived = true;
+            } else {
+                activeHtml += row;
+            }
         });
-        html += `</tbody></table>`;
-        document.getElementById('adminList').innerHTML = html;
+
+        activeHtml += `</tbody></table>`;
+        archivedHtml += `</tbody></table>`;
+
+        let finalContent = `
+            <div class="section-header"># CANDIDATURE ATTIVE</div>
+            ${activeHtml}`;
+
+        if (hasArchived) {
+            finalContent += `
+                <div class="section-header" style="margin-top:50px; border-color: #444; color: #888;"># ARCHIVIO STORICO (SOLO LETTURA)</div>
+                ${archivedHtml}`;
+        }
+
+        document.getElementById('adminList').innerHTML = finalContent;
     } catch (e) {
         document.getElementById('adminList').innerHTML = "Errore caricamento dati.";
     }
@@ -439,7 +491,12 @@ async function loadAdminTable() {
     }
 
 function confirmAction(id, status) {
-    const color = status === 'ACCETTATA' ? 'var(--success)' : (status === 'RIFIUTATA' ? 'var(--danger)' : '#ff8800');
+    // Definizione colori per il modal
+    const color = status === 'ACCETTATA' ? 'var(--success)' : 
+                 (status === 'RIFIUTATA' ? 'var(--danger)' : 
+                 (status === 'ARCHIVIATA' ? '#888' : 
+                 (status === 'RICHIESTE MODIFICHE' ? '#ff8800' : 'var(--police-blue)')));
+    
     let additionalInput = "";
     
     if (status === 'RIFIUTATA' || status === 'RICHIESTE MODIFICHE') {
@@ -451,18 +508,20 @@ function confirmAction(id, status) {
             </div>`;
     }
 
-        document.getElementById('modalResult').innerHTML = `
-            <div style="padding:20px;">
-                <h2 style="font-family:'Orbitron'; color:${color};">RICHIESTA AUTORIZZAZIONE</h2>
-                <p>Impostare lo stato su <strong style="color:${color}">${status}</strong>?</p>
-                ${additionalInput}
-                <div style="display:flex; gap:10px; margin-top:30px;">
-                    <button onclick="closeModal()" style="background:#333; border:none;">ANNULLA</button>
-                    <button onclick="processUpdate('${id}', '${status}')" style="background:${color}; border:none; color:${status === 'ACCETTATA' ? '#000' : '#fff'}">CONFERMA</button>
-                </div>
-            </div>`;
-        document.getElementById('modalOverlay').style.display = 'flex';
-    }
+    document.getElementById('modalResult').innerHTML = `
+        <div style="padding:20px;">
+            <h2 style="font-family:'Orbitron'; color:${color};">
+                ${status === 'ARCHIVIATA' ? 'ARCHIVIAZIONE PRATICA' : 'RICHIESTA AZIONE'}
+            </h2>
+            <p>Spostare la pratica nello stato <strong style="color:${color}">${status}</strong>?</p>
+            ${additionalInput}
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button onclick="closeModal()" style="background:#333; border:none;">ANNULLA</button>
+                <button onclick="processUpdate('${id}', '${status}')" style="background:${color}; border:none; color:${status === 'ACCETTATA' ? '#000' : '#fff'}">CONFERMA</button>
+            </div>
+        </div>`;
+    document.getElementById('modalOverlay').style.display = 'flex';
+}
 
 async function processUpdate(id, status) {
     let updateData = { stato: status };
@@ -565,6 +624,15 @@ async function checkUserApplication(uid) {
                     </p>
                     <button onclick="editApplication('${uid}')" style="background:#ff8800; color:black; border:none; padding:10px 20px; font-weight:bold; cursor:pointer;">MODIFICA IL BANDO</button>
                 </div>`;
+               }
+               // ... dentro checkUserApplication ...
+else if (data.stato === 'ARCHIVIATA') {
+    messageHtml = `
+        <div class="status-msg" style="border-left: 3px solid #888;">
+            <p>📁 <strong>PRATICA ARCHIVIATA</strong></p>
+            <p>Il tuo fascicolo è stato spostato nell'archivio storico del Dipartimento.</p>
+            <p>Non sono richieste ulteriori azioni da parte tua. Se desideri presentare una nuova domanda in futuro, contatta il Comando tramite i canali ufficiali.</p>
+        </div>`; 
         } else {
             messageHtml = `
                 <div class="status-msg">
@@ -573,7 +641,7 @@ async function checkUserApplication(uid) {
                     <p>Attualmente i Reclutatori stanno analizzando la tua fedina penale e le tue motivazioni.</p>
                     <p>Monitora regolarmente questo portale per aggiornamenti.</p>
                 </div>`;
-        }
+        } 
 
         content.innerHTML = `
             <h1>STATO PRATICA: #${data.protocollo}</h1>
@@ -811,4 +879,3 @@ async function handleFormSubmit(e) {
 </script>
 </body>
 </html>
-
